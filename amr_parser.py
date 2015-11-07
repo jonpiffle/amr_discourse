@@ -20,6 +20,15 @@ class AMRParser(object):
         self.nodes = deque()
 
     def parse(self, amr):
+        """
+        Builds a DAG from the AMR.
+
+        Senses (watch, boy, etc) never have outgoing edges. Instances of these
+        sense have an edge going to the thing that they are an instance of.
+
+        Instances of senses that have arguments also have labelled edges going
+        to the instances of each of their arguments.
+        """
         tree = self.standardize_spacing(amr)
         while tree:
             if tree[0] == '(':
