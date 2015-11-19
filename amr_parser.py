@@ -12,7 +12,6 @@ AMR_NODE = re.compile('^\(({}+) / ({}+)(.*)'.format(NON_SPACE_OR_RPAREN,
 AMR_ATTR = re.compile('^:({}+)(.*)'.format(NON_SPACE_OR_RPAREN))
 AMR_ATTR_VALUE = re.compile('^({}+)(.*)'.format(NON_SPACE_OR_RPAREN))
 
-
 class AMRParser(object):
 
     def __init__(self):
@@ -26,7 +25,7 @@ class AMRParser(object):
         Senses (watch, boy, etc) never have outgoing edges. Instances of these
         sense have an edge going to the thing that they are an instance of.
 
-        Instances of senses that have arguments also have labelled edges going
+        Instances of senses that have arguments also have labeled edges going
         to the instances of each of their arguments.
         """
         tree = self.standardize_spacing(amr)
