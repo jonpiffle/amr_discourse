@@ -10,7 +10,9 @@ WHITESPACE = re.compile('\s+')
 AMR_NODE = re.compile('^\(({}+) / ({}+)(.*)'.format(NON_SPACE_OR_RPAREN,
                                                     NON_SPACE_OR_RPAREN))
 AMR_ATTR = re.compile('^:({}+)(.*)'.format(NON_SPACE_OR_RPAREN))
-AMR_ATTR_VALUE = re.compile('^({}+)(.*)'.format(NON_SPACE_OR_RPAREN))
+AMR_ATTR_VALUE = re.compile('^([^ ]+) ?(.*)')
+CLOSE_PARENS = re.compile('^(\)*).*')
+
 
 class AMRParser(object):
 
@@ -70,51 +72,27 @@ class AMRParser(object):
                 raise Exception(rest)
 
             val, remainder = val_match.groups()
+            p = CLOSE_PARENS.match(val[::-1])  # strip trailing closed parens
+            # put trailing close parens back on the remainder
+            if p.groups()[0]:
+                val = val[:-len(p.groups()[0])]
+                remainder = p.groups()[0] + remainder
             remainder = remainder.strip()
             self.nodes[-1].add_attribute(attr, val)
 
         return remainder
 
     def standardize_spacing(self, amr):
-        """Remove extraneous whitespace characters."""
         return WHITESPACE.sub(' ', amr)
 
 
 if __name__ == '__main__':
     import sys
 
-    # amr = sys.stdin.read()
-    amr = """
-(s / say-01
-  :ARG0 (u / university
-          :name (n / name
-                  :op1 "Naif"
-                  :op2 "Arab"
-                  :op3 "Academy"
-                  :op4 "for"
-                  :op5 "Security"
-                  :op6 "Sciences")
-          :ARG1-of (b / base-01
-                     :location (c / city
-                                 :name (n2 / name
-                                         :op1 "Riyadh"))))
-  :ARG1 (r / run-01
-          :ARG0 u
-          :ARG1 (w / workshop
-                  :beneficiary (p / person
-                                 :quant 50
-                                 :ARG1-of (e / expert-41
-                                            :ARG2 (c2 / counter-01
-                                                    :ARG1 (t2 / terrorism)))))
-          :duration (t / temporal-quantity
-                      :quant 2
-                      :unit (w2 / week)))
-  :medium (s2 / statement))
-        """
-
-    amr2 = """
-(a0 / watch
-      :ARG0 (a1 / boy)
-      :ARG1 (a2 / tv))
-"""
+    amr = None
+    if len(sys.argv) > 1:
+        with open(sys.argv[1], 'r') as f:
+            amr = f.read()
+    else:
+        amr = sys.stdin.read()
     print(AMRParser().parse(amr.strip()))
