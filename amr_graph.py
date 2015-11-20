@@ -11,6 +11,7 @@ class AMRGraph(object):
             if (to, label) in self.edges:
                 return
             self.edges[(to, label)] = AMRGraph.Edge(self, to, label)
+            return self.edges[(to, label)]
 
         def add_attribute(self, attr, value):
             self.attributes[attr] = value
@@ -25,11 +26,21 @@ class AMRGraph(object):
 
     def __init__(self):
         self.nodes = {}
+        self.edges = set()
 
     def add_node(self, label):
         """
         Adds a node to the graph, if it's not already in the graph.
         Returns the node.
         """
-        self.nodes[label] = self.nodes.get(label, AMRGraph.Node(label))
+        if isinstance(label, AMRGraph.Node):
+            label, node = label.label, label
+        else:
+            label, node = label, AMRGraph.Node(label)
+        self.nodes[label] = self.nodes.get(label, node)
         return self.nodes[label]
+
+    def add_edge(self, from_node, to_node, label=None):
+        edge = from_node.add_edge(to_node, label=label)
+        if edge is not None:
+            self.edges = self.edges | edge

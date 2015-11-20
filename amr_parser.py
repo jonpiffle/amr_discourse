@@ -51,7 +51,7 @@ class AMRParser(object):
         instance, sense, rest = m.groups()
         instance_node, sense_node = [self.graph.add_node(n)
                                      for n in [instance, sense]]
-        instance_node.add_edge(sense_node, label='instance')
+        self.graph.add_edge(instance_node, sense_node, label='instance')
 
         return instance_node, rest.strip()
 
@@ -64,7 +64,7 @@ class AMRParser(object):
         rest = rest.strip()
         if rest[0] == '(':
             n, remainder = self.extract_node(rest)
-            self.nodes[-1].add_edge(n, label=attr)
+            self.graph.add_edge(self.nodes[-1], n, label=attr)
             self.nodes.append(n)
         else:
             val_match = AMR_ATTR_VALUE.match(rest)
