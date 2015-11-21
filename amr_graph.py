@@ -1,4 +1,5 @@
 import graphviz as gv
+from collections import deque
 
 class AMRGraph(object):
 
@@ -17,6 +18,9 @@ class AMRGraph(object):
 
         def add_attribute(self, attr, value):
             self.attributes[attr] = value
+
+        def attribute_set(self):
+            return set(self.attributes.items())
 
     class Edge(object):
         """Directed, labeled edge"""
@@ -69,12 +73,10 @@ class AMRGraph(object):
         elif len(concept_edges) == 1:
             return concept_edges[0].in_node.label
         else:
-            print(entity.label)
-            print([(e.in_node.label, e.out_node.label, e.label) for e in concept_edges])
             raise ValueError('Entity has multiple instance edges')
 
     def is_concept_node(self, entity):
-        return self.get_concept_node(entity) is None
+        return self.get_concept_label(entity) is None
 
     def merge(self, amr):
         """
@@ -95,7 +97,6 @@ class AMRGraph(object):
             elif len(equiv_nodes) == 1:
                 equiv_node = equiv_nodes[0]
             else:
-                print(amr_node.label, amr_node.attributes, [(n.label, n.attributes) for n in equiv_nodes])
                 raise ValueError('Multiple node matches in world graph. Node is ambiguous')
 
             if equiv_node is None and amr_node.label in self.nodes:
@@ -114,10 +115,8 @@ class AMRGraph(object):
                 rename_map[amr_node.label] = (equiv_node.label, 'existing')
                 amr_node.label = equiv_node.label
 
-        print(len(self.edges), len(amr.edges))
         for edge in amr.edges:
             self.add_edge(self.nodes[edge.out_node.label], self.nodes[edge.in_node.label], edge.label)
-        print(len(self.edges))
 
     def merge_node_attributes(self, node1, node2):
         node1.attributes.update(node2.attributes)
@@ -136,16 +135,25 @@ class AMRGraph(object):
         return False
 
     def nodes_equiv(self, self_node, amr, amr_node):
-        world_concept = self.get_concept_label(self_node) 
-        amr_concept = amr.get_concept_label(amr_node)
-
-        if world_concept is None and amr_concept is None:
-            return self_node.label == amr_node.label
-        elif 'and' in [world_concept, amr_concept]:
-            # Hack to ignore 'and' problem for now
+        """
+        Two nodes are equivalent if:
+            1. they are concept nodes with the same name 
+            2. they are the same concepts, they have no conflicting_attributes, and all of their children with the
+            same edge label are also equivalent
+        """
+        if self.is_concept_node(self_node) and amr.is_concept_node(amr_node):
+            return self_node.label == amr_node.label 
+        elif self.is_concept_node(self_node) or amr.is_concept_node(amr_node):
             return False
-        else:
-            return world_concept == amr_concept and not self.conflicting_attributes(self_node, amr_node)
+
+        child_pairs = []
+        for self_c_edge in self.get_child_edges(self_node):
+            for amr_c_edge in amr.get_child_edges(amr_node):
+                if self_c_edge.label == amr_c_edge.label:
+                    child_pairs.append((self_c_edge.in_node, amr_c_edge.in_node))
+
+        return not self.conflicting_attributes(self_node, amr_node) and all(self.nodes_equiv(self_c, amr, amr_c) for self_c, amr_c in child_pairs)
+
 
     def find_safe_rename(self, label):
         count = 1
@@ -175,6 +183,7 @@ class AMRGraph(object):
         g = gv.Digraph()
         nodes = [(n.label, n.attributes) for n in self.nodes.values()]
         edges = [((e.out_node.label, e.in_node.label), {'label': e.label}) for e in self.edges]
+        print(nodes)
         g = add_nodes(g, nodes)
         g = add_edges(g, edges)
         g.render('img/%s' % filename, view=True)
