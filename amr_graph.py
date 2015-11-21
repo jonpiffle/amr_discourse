@@ -1,3 +1,5 @@
+import graphviz as gv
+
 class AMRGraph(object):
 
     class Node(object):
@@ -43,13 +45,33 @@ class AMRGraph(object):
     def add_edge(self, from_node, to_node, label=None):
         edge = from_node.add_edge(to_node, label=label)
         if edge is not None:
-            self.edges = self.edges | edge
+            self.edges.add(edge)
 
     def get_parent_edges(self, node, f=lambda e: True):
         return self.get_edges(lambda e: e.out_node == node and f(e))
 
     def get_edges(self, f):
-        return filter(f, self.edges)
+        return list(filter(f, self.edges))
+
+    def get_concept_label(self, entity):
+        """
+        Returns the concept node associated with an entity by looking for a parent edge
+        with label 'instance'. Returns None if no instance edge (this means the entity is a concept).
+        Raises error if more than 1 edge matching criteria.
+        """
+        f = lambda e: e.label == 'instance'
+        concept_edges = self.get_parent_edges(entity, f=f)
+        if len(concept_edges) == 0:
+            return None
+        elif len(concept_edges) == 1:
+            return concept_edges[0].in_node.label
+        else:
+            print(entity.label)
+            print([(e.in_node.label, e.out_node.label, e.label) for e in concept_edges])
+            raise ValueError('Entity has multiple instance edges')
+
+    def is_concept_node(self, entity):
+        return self.get_concept_node(entity) is None
 
     def merge(self, amr):
         """
@@ -58,71 +80,94 @@ class AMRGraph(object):
         Returns True if the merge was successful, False if the merge could
         not be resolved.
         """
-        self.unmerged_nodes = amr.nodes.values()
+
+        rename_map = {}
+        self.unmerged_nodes = list(amr.nodes.values())
         while self.unmerged_nodes:
-            n = self.unmerged_nodes.pop()
-            if n.label in self.nodes:
-                self.merge_same_name(amr, self.nodes[n.label], n)
-            else:
-                self.merge_different_name(amr, n)
+            amr_node = self.unmerged_nodes.pop()
+            equiv_nodes = self.find_equiv_nodes(amr, amr_node)
 
-    def merge_same_name(self, amr, entity, node):
-        f = lambda e: e.label == 'instance'
-        world_concept_edge = self.get_parent_edges(entity, f=f)
-        amr_concept_edge = amr.get_parent_edges(node, f=f)
-        if world_concept_edge and amr_concept_edge:
-            # both are instances
-            world_concept = world_concept_edge[0].in_node
-            amr_concept = amr_concept_edge[0].in_node
-            if amr_concept.label == world_concept.label:
-                # both are instances of the same concept, so we can merge
-                # these nodes without needing to rename
-                pass
+            if len(equiv_nodes) == 0:
+                equiv_node = None
+            elif len(equiv_nodes) == 1:
+                equiv_node = equiv_nodes[0]
             else:
-                # instances of different concepts, need to rename node not in
-                # the world already, but then it can be safely added
-                self.find_safe_rename(node.label)
-        elif world_concept_edge or amr_concept_edge:
-            # one is a concept, the other is an instance. these cannot be
-            # merged
-            pass
-        else:
-            # both are concepts. since the names are the same the nodes are too
-            # we don't need to add the node to the world, but we do need to
-            # bring over any edges
-            pass
+                print(amr_node.label, amr_node.attributes, [(n.label, n.attributes) for n in equiv_nodes])
+                raise ValueError('Multiple node matches in world graph. Node is ambiguous')
 
-    def merge_different_name(self, amr, node):
-        instance = lambda e: e.label == 'instance'
-        amr_concept_edge = amr.get_parent_edges(node, f=instance)
-        if amr_concept_edge:
-            # :node: is an instance of some concept, we can try to resolve
-            # the two graphs
-            amr_concept = amr_concept_edge[0]
-            # this will look for a concept node in the world graph
-            concept_matcher = lambda e: instance(e) and \
-                e.in_node.label == amr_concept.label
-            world_concept_edge = self.get_edges(concept_matcher)
-            if world_concept_edge:
-                world_concept = world_concept[0].in_node
-                for t in world_concept.edges.keys():
-                    to, label = t
-                    if label == 'instance':
-                        # TODO: check if node attributes match
-                        pass
+            if equiv_node is None and amr_node.label in self.nodes:
+                # No existing node, but a name conflict
+                new_name = self.find_safe_rename(amr_node.label)
+                rename_map[amr_node.label] = new_name
+                amr_node.label = new_name
+                self.add_node(amr_node)
+            elif equiv_node is None:
+                # No existing node, no name conflict
+                self.add_node(amr_node)
+                rename_map[amr_node.label] = amr_node.label
             else:
-                # :node: is an instance of a concept which is not in the world
-                # we can just add :node: to the world. the concept will be
-                # merged in a later iteration
+                # Existing node
+                self.merge_node_attributes(equiv_node, amr_node)
+                rename_map[amr_node.label] = amr_node.label
+
+        for edge in amr.edges:
+            if edge not in self.edges:
+                self.add_edge(self.nodes[edge.out_node.label], self.nodes[edge.in_node.label], edge.label)
+                print((self.nodes[edge.out_node.label].label, self.nodes[edge.in_node.label].label, edge.label))
+
+    def merge_node_attributes(self, node1, node2):
+        node1.attributes.merge(node2.attributes)
+
+    def find_equiv_nodes(self, amr, amr_node):
+        """Returns a list of nodes in world graph that are equiv to node in amr graph"""
+        return [n for n in self.nodes.values() if self.nodes_equiv(n, amr, amr_node)]
+
+    def conflicting_attributes(self, node1, node2):
+        """
+        Returns whether or not node1 and node2 have a different value for an attribute with the same name
+        """
+        for k, v in node1.attributes.items():
+            if k in node2.attributes and node2.attributes[k] != v:
+                return True
+        return False
+
+    def nodes_equiv(self, self_node, amr, amr_node):
+        world_concept = self.get_concept_label(self_node) 
+        amr_concept = amr.get_concept_label(amr_node)
+
+        if world_concept is None and amr_concept is None:
+            return self_node.label == amr_node.label
         else:
-            # :node: is a concept, since it has a different name, it is a
-            # different concept, so we can just add :node: to the world
-            pass
+            return world_concept == amr_concept and not self.conflicting_attributes(self_node, amr_node)
 
     def find_safe_rename(self, label):
         count = 1
         new_name = "{}{}".format(label, count)
-        while label in self.nodes:
+        while new_name in self.nodes:
             count += 1
             new_name = "{}{}".format(label, count)
         return new_name
+
+    def draw(self, filename='g.gv'):
+        def add_nodes(graph, nodes):
+            for n in nodes:
+                if isinstance(n, tuple):
+                    graph.node(n[0], **n[1])
+                else:
+                    graph.node(n)
+            return graph
+
+        def add_edges(graph, edges):
+            for e in edges:
+                if isinstance(e[0], tuple):
+                    graph.edge(*e[0], **e[1])
+                else:
+                    graph.edge(*e)
+            return graph
+
+        g = gv.Digraph()
+        nodes = [(n.label, n.attributes) for n in self.nodes.values()]
+        edges = [((e.in_node.label, e.out_node.label), {'label': e.label}) for e in self.edges]
+        g = add_nodes(g, nodes)
+        g = add_edges(g, edges)
+        g.render('img/%s' % filename, view=True)

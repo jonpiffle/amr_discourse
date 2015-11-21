@@ -44,5 +44,14 @@ if __name__ == '__main__':
     entries = FileParser().parse('amr.txt')
     swg = SlidingWindowGenerator(entries)
     paragraphs = swg.generate(k=5)
-    print(len(paragraphs))
-    print([s.entry_id for s in paragraphs[0].amr_sentences])
+    paragraph = paragraphs[9]
+    sentence1 = paragraph.amr_sentences[3]
+    sentence2 = paragraph.amr_sentences[4]
+    #print(sentence1.sentence)
+    sentence1.amr_graph.draw('g1.gv')
+    print(sentence2.sentence)
+    print(sentence2.amr_graph_string)
+    sentence2.amr_graph.draw('g2.gv')
+    sentence1.amr_graph.merge(sentence2.amr_graph)
+    sentence1.amr_graph.draw('g3.gv')
+

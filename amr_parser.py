@@ -51,7 +51,7 @@ class AMRParser(object):
         instance, sense, rest = m.groups()
         instance_node, sense_node = [self.graph.add_node(n)
                                      for n in [instance, sense]]
-        self.graph.add_edge(instance_node, sense_node, label='instance')
+        self.graph.add_edge(sense_node, instance_node, label='instance')
 
         return instance_node, rest.strip()
 

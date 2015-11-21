@@ -42,7 +42,7 @@ class FileParser(object):
         parser = AMRParser()
         parser.parse(amr_string)
         amr_graph = parser.graph
-        return AMRSentence(entry_id, entry_date, entry_type, filename, sentence, amr_graph)
+        return AMRSentence(entry_id, entry_date, entry_type, filename, sentence, amr_graph, amr_string)
 
     def parse_id_date_type(self, line):
         entry_id = re.search('# ::id (.*) ::date', line).group(1)
@@ -57,13 +57,14 @@ class FileParser(object):
         return re.search('::file (.*)$', line).group(1)
 
 class AMRSentence(object):
-    def __init__(self, entry_id, entry_date, entry_type, filename, sentence, amr_graph):
+    def __init__(self, entry_id, entry_date, entry_type, filename, sentence, amr_graph, amr_graph_string):
         self.entry_id = entry_id
         self.entry_date = entry_date
         self.entry_type = entry_type
         self.filename = filename
         self.sentence = sentence
         self.amr_graph = amr_graph
+        self.amr_graph_string = amr_graph_string
         self.document_name = entry_id.split('.')[0]
 
 if __name__ == '__main__':
