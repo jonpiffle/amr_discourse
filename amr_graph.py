@@ -58,35 +58,66 @@ class AMRGraph(object):
         Returns True if the merge was successful, False if the merge could
         not be resolved.
         """
-        amr_nodes = amr.nodes.values()
-        non_leaf_nodes = set([e.in_node for e in amr.edges])
-        leaf_nodes = set(amr_nodes) - non_leaf_nodes
-        assert leaf_nodes
-        unmerged_nodes = leaf_nodes
-        while unmerged_nodes:
-            n = unmerged_nodes.pop()
+        self.unmerged_nodes = amr.nodes.values()
+        while self.unmerged_nodes:
+            n = self.unmerged_nodes.pop()
             if n.label in self.nodes:
-                # same name
-                entity = self.nodes[n.label]
-                shared_keys = set(n.attributes.keys()) & \
-                    set(entity.attributes.keys())
-                attribute_mismatch = [n.attributes[k] != entity.attributes[k]
-                                      for k in shared_keys]
-                if any(attribute_mismatch):
-                    # diff entity
-                    new_name = self.find_safe_rename(n.label)
-                    n.label = new_name
-                    self.add_node(n)
-                    for e in n.edges.keys():
-                        pass
-                else:
-                    # same entity
-                    # TODO: bring over any new edges
-                    for e in n.edges.keys():
+                self.merge_same_name(amr, self.nodes[n.label], n)
+            else:
+                self.merge_different_name(amr, n)
+
+    def merge_same_name(self, amr, entity, node):
+        f = lambda e: e.label == 'instance'
+        world_concept_edge = self.get_parent_edges(entity, f=f)
+        amr_concept_edge = amr.get_parent_edges(node, f=f)
+        if world_concept_edge and amr_concept_edge:
+            # both are instances
+            world_concept = world_concept_edge[0].in_node
+            amr_concept = amr_concept_edge[0].in_node
+            if amr_concept.label == world_concept.label:
+                # both are instances of the same concept, so we can merge
+                # these nodes without needing to rename
+                pass
+            else:
+                # instances of different concepts, need to rename node not in
+                # the world already, but then it can be safely added
+                self.find_safe_rename(node.label)
+        elif world_concept_edge or amr_concept_edge:
+            # one is a concept, the other is an instance. these cannot be
+            # merged
+            pass
+        else:
+            # both are concepts. since the names are the same the nodes are too
+            # we don't need to add the node to the world, but we do need to
+            # bring over any edges
+            pass
+
+    def merge_different_name(self, amr, node):
+        instance = lambda e: e.label == 'instance'
+        amr_concept_edge = amr.get_parent_edges(node, f=instance)
+        if amr_concept_edge:
+            # :node: is an instance of some concept, we can try to resolve
+            # the two graphs
+            amr_concept = amr_concept_edge[0]
+            # this will look for a concept node in the world graph
+            concept_matcher = lambda e: instance(e) and \
+                e.in_node.label == amr_concept.label
+            world_concept_edge = self.get_edges(concept_matcher)
+            if world_concept_edge:
+                world_concept = world_concept[0].in_node
+                for t in world_concept.edges.keys():
+                    to, label = t
+                    if label == 'instance':
+                        # TODO: check if node attributes match
                         pass
             else:
-                # diff name
-                pass
+                # :node: is an instance of a concept which is not in the world
+                # we can just add :node: to the world. the concept will be
+                # merged in a later iteration
+        else:
+            # :node: is a concept, since it has a different name, it is a
+            # different concept, so we can just add :node: to the world
+            pass
 
     def find_safe_rename(self, label):
         count = 1
