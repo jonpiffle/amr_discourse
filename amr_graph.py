@@ -44,3 +44,48 @@ class AMRGraph(object):
         edge = from_node.add_edge(to_node, label=label)
         if edge is not None:
             self.edges = self.edges | edge
+
+    def merge(self, amr):
+        """
+        Merge the given amr graph into this one. Modifies this graph in place.
+
+        Returns True if the merge was successful, False if the merge could
+        not be resolved.
+        """
+        amr_nodes = amr.nodes.values()
+        non_leaf_nodes = set([e.in_node for e in amr.edges])
+        leaf_nodes = set(amr_nodes) - non_leaf_nodes
+        assert leaf_nodes
+        unmerged_nodes = leaf_nodes
+        while unmerged_nodes:
+            n = unmerged_nodes.pop()
+            if n.label in self.nodes:
+                # same name
+                entity = self.nodes[n.label]
+                shared_keys = set(n.attributes.keys()) & \
+                    set(entity.attributes.keys())
+                attribute_mismatch = [n.attributes[k] != entity.attributes[k]
+                                      for k in shared_keys]
+                if any(attribute_mismatch):
+                    # diff entity
+                    new_name = self.find_safe_rename(n.label)
+                    n.label = new_name
+                    self.add_node(n)
+                    for e in n.edges.keys():
+                        pass
+                else:
+                    # same entity
+                    # TODO: bring over any new edges
+                    for e in n.edges.keys():
+                        pass
+            else:
+                # diff name
+                pass
+
+    def find_safe_rename(self, label):
+        count = 1
+        new_name = "{}{}".format(label, count)
+        while label in self.nodes:
+            count += 1
+            new_name = "{}{}".format(label, count)
+        return new_name
