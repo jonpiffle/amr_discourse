@@ -154,7 +154,6 @@ class AMRGraph(object):
 
         return not self.conflicting_attributes(self_node, amr_node) and all(self.nodes_equiv(self_c, amr, amr_c) for self_c, amr_c in child_pairs)
 
-
     def find_safe_rename(self, label):
         count = 1
         new_name = "{}{}".format(label, count)
@@ -183,7 +182,6 @@ class AMRGraph(object):
         g = gv.Digraph()
         nodes = [(n.label, n.attributes) for n in self.nodes.values()]
         edges = [((e.out_node.label, e.in_node.label), {'label': e.label}) for e in self.edges]
-        print(nodes)
         g = add_nodes(g, nodes)
         g = add_edges(g, edges)
         g.render('img/%s' % filename, view=True)
