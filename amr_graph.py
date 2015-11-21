@@ -45,6 +45,12 @@ class AMRGraph(object):
         if edge is not None:
             self.edges = self.edges | edge
 
+    def get_parent_edges(self, node, f=lambda e: True):
+        return self.get_edges(lambda e: e.out_node == node and f(e))
+
+    def get_edges(self, f):
+        return filter(f, self.edges)
+
     def merge(self, amr):
         """
         Merge the given amr graph into this one. Modifies this graph in place.
