@@ -1,4 +1,4 @@
-import itertools
+import copy, itertools
 
 from file_parser import FileParser
 
@@ -38,21 +38,20 @@ class AMRParagraph(object):
             amr_sentences = []
         self.amr_sentences = amr_sentences
         self.document_name = document_name
+        self.amr_graph = None
+
+    def _generate_amr_graph(self):
+        start_graph = copy.deepcopy(self.amr_sentences[0].amr_graph)
+        for sentence in self.amr_sentences[1:]:
+            start_graph.merge(sentence.amr_graph)
+        self.amr_graph = start_graph
 
 
 if __name__ == '__main__':
     entries = FileParser().parse('amr.txt')
     swg = SlidingWindowGenerator(entries)
     paragraphs = swg.generate(k=5)
-    paragraph = paragraphs[10]
-    sentence1 = paragraph.amr_sentences[3]
-    sentence2 = paragraph.amr_sentences[4]
-    print(sentence1.sentence)
-    print(sentence1.amr_graph_string)
-    sentence1.amr_graph.draw('g1.gv')
-    print(sentence2.sentence)
-    print(sentence2.amr_graph_string)
-    sentence2.amr_graph.draw('g2.gv')
-    sentence1.amr_graph.merge(sentence2.amr_graph)
-    sentence1.amr_graph.draw('g3.gv')
+    paragraph = paragraphs[14]
+    paragraph._generate_amr_graph()
+    paragraph.amr_graph.draw()
 
