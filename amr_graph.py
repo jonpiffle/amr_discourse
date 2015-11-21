@@ -11,7 +11,7 @@ class AMRGraph(object):
 
         def add_edge(self, to, label=None):
             if (to, label) in self.edges:
-                return
+                return self.edges[(to, label)]
             self.edges[(to, label)] = AMRGraph.Edge(self, to, label)
             return self.edges[(to, label)]
 
@@ -21,7 +21,7 @@ class AMRGraph(object):
     class Edge(object):
         """Directed, labeled edge"""
 
-        def __init__(self, in_node, out_node, label):
+        def __init__(self, out_node, in_node, label):
             self.in_node = in_node
             self.out_node = out_node
             self.label = label
@@ -48,6 +48,9 @@ class AMRGraph(object):
             self.edges.add(edge)
 
     def get_parent_edges(self, node, f=lambda e: True):
+        return self.get_edges(lambda e: e.in_node == node and f(e))
+
+    def get_child_edges(self, node, f=lambda e: True):
         return self.get_edges(lambda e: e.out_node == node and f(e))
 
     def get_edges(self, f):
@@ -60,7 +63,7 @@ class AMRGraph(object):
         Raises error if more than 1 edge matching criteria.
         """
         f = lambda e: e.label == 'instance'
-        concept_edges = self.get_parent_edges(entity, f=f)
+        concept_edges = self.get_child_edges(entity, f=f)
         if len(concept_edges) == 0:
             return None
         elif len(concept_edges) == 1:
@@ -98,25 +101,26 @@ class AMRGraph(object):
             if equiv_node is None and amr_node.label in self.nodes:
                 # No existing node, but a name conflict
                 new_name = self.find_safe_rename(amr_node.label)
-                rename_map[amr_node.label] = new_name
+                rename_map[amr_node.label] = (new_name, 'no existing, but conflict')
                 amr_node.label = new_name
                 self.add_node(amr_node)
             elif equiv_node is None:
                 # No existing node, no name conflict
                 self.add_node(amr_node)
-                rename_map[amr_node.label] = amr_node.label
+                rename_map[amr_node.label] = (amr_node.label, 'no existing, no conflict')
             else:
                 # Existing node
                 self.merge_node_attributes(equiv_node, amr_node)
-                rename_map[amr_node.label] = amr_node.label
+                rename_map[amr_node.label] = (equiv_node.label, 'existing')
+                amr_node.label = equiv_node.label
 
+        print(len(self.edges), len(amr.edges))
         for edge in amr.edges:
-            if edge not in self.edges:
-                self.add_edge(self.nodes[edge.out_node.label], self.nodes[edge.in_node.label], edge.label)
-                print((self.nodes[edge.out_node.label].label, self.nodes[edge.in_node.label].label, edge.label))
+            self.add_edge(self.nodes[edge.out_node.label], self.nodes[edge.in_node.label], edge.label)
+        print(len(self.edges))
 
     def merge_node_attributes(self, node1, node2):
-        node1.attributes.merge(node2.attributes)
+        node1.attributes.update(node2.attributes)
 
     def find_equiv_nodes(self, amr, amr_node):
         """Returns a list of nodes in world graph that are equiv to node in amr graph"""
@@ -137,6 +141,9 @@ class AMRGraph(object):
 
         if world_concept is None and amr_concept is None:
             return self_node.label == amr_node.label
+        elif 'and' in [world_concept, amr_concept]:
+            # Hack to ignore 'and' problem for now
+            return False
         else:
             return world_concept == amr_concept and not self.conflicting_attributes(self_node, amr_node)
 
@@ -167,7 +174,7 @@ class AMRGraph(object):
 
         g = gv.Digraph()
         nodes = [(n.label, n.attributes) for n in self.nodes.values()]
-        edges = [((e.in_node.label, e.out_node.label), {'label': e.label}) for e in self.edges]
+        edges = [((e.out_node.label, e.in_node.label), {'label': e.label}) for e in self.edges]
         g = add_nodes(g, nodes)
         g = add_edges(g, edges)
         g.render('img/%s' % filename, view=True)
