@@ -46,12 +46,19 @@ class AMRParagraph(object):
             start_graph.merge(sentence.amr_graph)
         self.amr_graph = start_graph
 
+    def sentence_graphs(self):
+        return [s.amr_graph for s in self.amr_sentences]
+
+    def paragraph_graph(self):
+        if self.amr_graph is None:
+            self._generate_amr_graph()
+        return self.amr_graph
 
 if __name__ == '__main__':
     entries = FileParser().parse('amr.txt')
     swg = SlidingWindowGenerator(entries)
     paragraphs = swg.generate(k=5)
     paragraph = paragraphs[14]
-    paragraph._generate_amr_graph()
-    paragraph.amr_graph.draw()
+    paragraph.paragraph_graph().draw()
+    print(paragraph.sentence_graphs())
 
