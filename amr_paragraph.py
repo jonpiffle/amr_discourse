@@ -28,7 +28,8 @@ class SlidingWindowGenerator(object):
         amr_documents = itertools.groupby(self.file_entries, lambda x: x.document_name)
         for document_name, file_entries in amr_documents:
             for subset in window(file_entries, k):
-                amr_paragraphs.append(AMRParagraph(document_name, subset))
+                if not any([s.entry_type != 'body' for s in subset]):
+                    amr_paragraphs.append(AMRParagraph(document_name, subset))
         return amr_paragraphs
 
 
