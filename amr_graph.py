@@ -22,6 +22,9 @@ class AMRGraph(object):
         def attribute_set(self):
             return set(self.attributes.items())
 
+        def __repr__(self):
+            return "<Node: %s>" % self.label
+
     class Edge(object):
         """Directed, labeled edge"""
 
@@ -29,6 +32,9 @@ class AMRGraph(object):
             self.in_node = in_node
             self.out_node = out_node
             self.label = label
+
+        def __repr__(self):
+            return "<Edge: %s -> %s, label: %s>" % (self.out_node.label, self.in_node.label, self.label)
 
     def __init__(self):
         self.nodes = {}
@@ -50,12 +56,32 @@ class AMRGraph(object):
         edge = from_node.add_edge(to_node, label=label)
         if edge is not None:
             self.edges.add(edge)
+        return edge
+
+    def delete_edge(self, edge):
+        for label, node in self.nodes.items():
+            if (edge.in_node, edge.label) in node.edges:
+                del node.edges[(edge.in_node, edge.label)]
+        self.edges.discard(edge)
+
+    def delete_node(self, node):
+        for c_edge in self.get_child_edges(node):
+            self.delete_edge(c_edge)
+        for p_edge in self.get_parent_edges(node):
+            self.delete_edge(p_edge)
+        del self.nodes[node.label]
 
     def get_parent_edges(self, node, f=lambda e: True):
         return self.get_edges(lambda e: e.in_node == node and f(e))
 
+    def get_parents(self, node, f=lambda e: True):
+        return [e.out_node for e in self.get_parent_edges(node, f)]
+
     def get_child_edges(self, node, f=lambda e: True):
         return self.get_edges(lambda e: e.out_node == node and f(e))
+
+    def get_children(self, node, f=lambda e: True):
+        return [e.in_node for e in self.get_child_edges(node, f)]
 
     def get_edges(self, f):
         return list(filter(f, self.edges))
@@ -153,6 +179,82 @@ class AMRGraph(object):
                     child_pairs.append((self_c_edge.in_node, amr_c_edge.in_node))
 
         return not self.conflicting_attributes(self_node, amr_node) and all(self.nodes_equiv(self_c, amr, amr_c) for self_c, amr_c in child_pairs)
+
+    def get_parent_traversals(self, node):
+        """
+        Given a node, returns a list of 'traversals' (ordered lists of edges) representing all possible paths
+        from the current node up the ancestor tree to a root node (a node with no parents)
+        Will loop infinitely if there is a loop
+        """
+
+        final_traversals = []
+        self._get_parent_traversals(node, [[]], final_traversals)
+        return final_traversals
+    
+    def _get_parent_traversals(self, node, traversals, final_traversals):
+        """Helper function that does the actual traversal logic"""
+        if len(self.get_parent_edges(node)) == 0:
+            for t in traversals:
+                final_traversals.append(t)
+        else:
+            for p_edge in self.get_parent_edges(node):
+                self._get_parent_traversals(p_edge.out_node, [t + [p_edge] for t in traversals], final_traversals)
+
+    def remove_and(self):
+        and_instances = self.get_and_instances()
+        for and_instance in and_instances:
+            parent_traversals = self.get_parent_traversals(and_instance)
+            c_edges = self.get_child_edges(and_instance, lambda e: e.label != 'instance')
+
+            for traversal in parent_traversals:
+                for c_edge in c_edges:
+                    # copy parent traversal without first edge (first edge goes to 'and' instance)
+                    new_traversal = self.copy_traversal(traversal[1:])
+                    last_edge = new_traversal[0]
+                    # add edge from immediate parent of 'and' instance to child of 'and' instance
+                    self.add_edge(last_edge.in_node, c_edge.in_node, label=traversal[0].label)
+                    # add back other sibling edges
+                    for other_edge in self.get_child_edges(traversal[0].out_node, lambda e: e.label != traversal[0].label):
+                        self.add_edge(last_edge.in_node, other_edge.in_node, other_edge.label)
+
+                # delete original parent traversal after it has been copied for each child
+                for edge in traversal:
+                    self.delete_edge(edge)
+                    self.delete_node(edge.out_node)
+
+            # delete all edges from 'and' instance
+            for c_edge in c_edges:
+                self.delete_edge(c_edge)
+            # delete and instance
+            self.delete_node(and_instance)
+        # delete 'and' node
+        self.delete_node(self.nodes['and'])
+
+    def copy_traversal(self, traversal):
+        new_traversal = []
+        for edge in traversal:
+            out_node = self.add_node(self.find_safe_rename(edge.out_node.label))
+            in_node = self.add_node(self.find_safe_rename(edge.in_node.label))
+            new_edge = self.add_edge(out_node, in_node, label=edge.label)
+            new_traversal.append(new_edge)
+
+            # copy other edges along traversal; however, point to original child nodes
+            for other_edge in self.get_child_edges(edge.out_node, lambda e: e != edge):
+               self.add_edge(out_node, other_edge.in_node, other_edge.label)
+
+        return new_traversal
+
+    def get_roots(self):
+        return [n for n in self.nodes.values() if len(self.get_parent_edges(n)) == 0]
+
+    def get_and_instances(self):
+        and_nodes = [n for n in self.nodes.values() if n.label == 'and']
+        if len(and_nodes) == 0:
+            return []
+
+        and_node = and_nodes[0]
+        and_instances = [e.out_node for e in self.get_parent_edges(and_node, lambda e: e.label == 'instance')]
+        return and_instances
 
     def find_safe_rename(self, label):
         count = 1
