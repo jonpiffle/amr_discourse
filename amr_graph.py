@@ -1,3 +1,4 @@
+import re
 import graphviz as gv
 from collections import deque
 
@@ -257,9 +258,12 @@ class AMRGraph(object):
         and_instances = [e.out_node for e in self.get_parent_edges(and_node, lambda e: e.label == 'instance')]
         return and_instances
 
+    def get_roots(self):
+        return [n for n in self.nodes.values() if len(self.get_parent_edges(n)) == 0]
+
     def reverse_arg_ofs(self):
         for e in self.edges:
-            if '-of' in e.label:
+            if re.match('ARG\d-of', e.label) is not None:
                 e.label = e.label.replace('-of', '')
                 e.out_node, e.in_node = e.in_node, e.out_node
 
