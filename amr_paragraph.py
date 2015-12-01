@@ -61,9 +61,7 @@ if __name__ == '__main__':
     paragraphs = swg.generate(k=5)
     paragraph = paragraphs[17]
     and_sentence = paragraph.sentence_graphs()[-1]
-    and_sentence.draw(filename='g1.gv')
-    and_sentence.remove_and()
-    and_sentence.draw(filename='g2.gv')
+    and_sentence.draw(filename='g3.gv')
     #paragraph.paragraph_graph().draw()
     #print([n.label for n in paragraph.paragraph_graph().get_roots()])
 

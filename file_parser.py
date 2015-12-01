@@ -42,6 +42,11 @@ class FileParser(object):
         parser = AMRParser()
         parser.parse(amr_string)
         amr_graph = parser.graph
+
+        # preprocess amr graph
+        amr_graph.reverse_arg_ofs()
+        amr_graph.remove_and()
+        
         return AMRSentence(entry_id, entry_date, entry_type, filename, sentence, amr_graph, amr_string)
 
     def parse_id_date_type(self, line):

@@ -69,7 +69,8 @@ class AMRGraph(object):
             self.delete_edge(c_edge)
         for p_edge in self.get_parent_edges(node):
             self.delete_edge(p_edge)
-        del self.nodes[node.label]
+        if node.label in self.nodes:
+            del self.nodes[node.label]
 
     def get_parent_edges(self, node, f=lambda e: True):
         return self.get_edges(lambda e: e.in_node == node and f(e))
@@ -210,12 +211,14 @@ class AMRGraph(object):
                 for c_edge in c_edges:
                     # copy parent traversal without first edge (first edge goes to 'and' instance)
                     new_traversal = self.copy_traversal(traversal[1:])
-                    last_edge = new_traversal[0]
-                    # add edge from immediate parent of 'and' instance to child of 'and' instance
-                    self.add_edge(last_edge.in_node, c_edge.in_node, label=traversal[0].label)
-                    # add back other sibling edges
-                    for other_edge in self.get_child_edges(traversal[0].out_node, lambda e: e.label != traversal[0].label):
-                        self.add_edge(last_edge.in_node, other_edge.in_node, other_edge.label)
+
+                    if len(new_traversal) > 0:
+                        last_edge = new_traversal[0]
+                        # add edge from immediate parent of 'and' instance to child of 'and' instance
+                        self.add_edge(last_edge.in_node, c_edge.in_node, label=traversal[0].label)
+                        # add back other sibling edges
+                        for other_edge in self.get_child_edges(traversal[0].out_node, lambda e: e.label != traversal[0].label):
+                            self.add_edge(last_edge.in_node, other_edge.in_node, other_edge.label)
 
                 # delete original parent traversal after it has been copied for each child
                 for edge in traversal:
@@ -228,7 +231,8 @@ class AMRGraph(object):
             # delete and instance
             self.delete_node(and_instance)
         # delete 'and' node
-        self.delete_node(self.nodes['and'])
+        if 'and' in self.nodes:
+            self.delete_node(self.nodes['and'])
 
     def copy_traversal(self, traversal):
         new_traversal = []
@@ -244,9 +248,6 @@ class AMRGraph(object):
 
         return new_traversal
 
-    def get_roots(self):
-        return [n for n in self.nodes.values() if len(self.get_parent_edges(n)) == 0]
-
     def get_and_instances(self):
         and_nodes = [n for n in self.nodes.values() if n.label == 'and']
         if len(and_nodes) == 0:
@@ -255,6 +256,12 @@ class AMRGraph(object):
         and_node = and_nodes[0]
         and_instances = [e.out_node for e in self.get_parent_edges(and_node, lambda e: e.label == 'instance')]
         return and_instances
+
+    def reverse_arg_ofs(self):
+        for e in self.edges:
+            if '-of' in e.label:
+                e.label = e.label.replace('-of', '')
+                e.out_node, e.in_node = e.in_node, e.out_node
 
     def find_safe_rename(self, label):
         count = 1
