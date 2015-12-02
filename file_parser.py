@@ -15,10 +15,6 @@ class FileParser(object):
             current_entry = []
 
             for line in f:
-                # Problem with AMRParser on sentence 536, so just limiting to first 500 for now
-                if len(amrs) > 500:
-                    break
-
                 line = line.strip()
                 if "# AMR release;" in line or line == '':
                     continue
@@ -37,6 +33,7 @@ class FileParser(object):
 
     def parse_file_entry(self, lines):
         entry_id, entry_date, entry_type = self.parse_id_date_type(lines[0])
+        print(entry_id)
         sentence = self.parse_sentence(lines[1])
         filename = self.parse_filename(lines[2])
 
