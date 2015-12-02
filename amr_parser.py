@@ -66,6 +66,16 @@ class AMRParser(object):
             n, remainder = self.extract_node(rest)
             self.graph.add_edge(self.nodes[-1], n, label=attr)
             self.nodes.append(n)
+        elif not (rest[0].isdigit() or rest[0] == '"'):
+            # this is a node that has already been instantiated
+            span = re.search(r'^\w+\b', rest).span()
+            node_name = rest[span[0]:span[1]]
+            remainder = rest[span[1]:]
+            self.graph.add_edge(
+                self.nodes[-1],
+                self.graph.nodes[node_name],
+                label=attr,
+            )
         else:
             val_match = AMR_ATTR_VALUE.match(rest)
             if not val_match:
