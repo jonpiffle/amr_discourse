@@ -70,7 +70,7 @@ class AMRParser(object):
             # this is a node that has already been instantiated
             span = re.search(r'^\w+\b', rest).span()
             node_name = rest[span[0]:span[1]]
-            remainder = rest[span[1]:]
+            remainder = rest[span[1]:].strip()
             self.graph.add_edge(
                 self.nodes[-1],
                 self.graph.nodes[node_name],
