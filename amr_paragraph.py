@@ -59,9 +59,11 @@ if __name__ == '__main__':
     entries = FileParser().parse('amr.txt')
     swg = SlidingWindowGenerator(entries)
     paragraphs = swg.generate(k=5)
-    paragraph = paragraphs[17]
-    and_sentence = paragraph.sentence_graphs()[-1]
-    and_sentence.draw(filename='g3.gv')
-    #paragraph.paragraph_graph().draw()
+    paragraph = paragraphs[13]
+    paragraph.paragraph_graph().draw()
+    print(paragraph.amr_sentences[-1].entry_id)
+    for root in paragraph.paragraph_graph().get_roots():
+        print(root)
+        print(paragraph.paragraph_graph().get_subgraph_from_root(root))
     #print([n.label for n in paragraph.paragraph_graph().get_roots()])
 

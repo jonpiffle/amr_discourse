@@ -265,6 +265,28 @@ class AMRGraph(object):
     def get_roots(self):
         return [n for n in self.nodes.values() if len(self.get_parent_edges(n)) == 0]
 
+    def get_verbs(self):
+        return [n for n in self.nodes.values() if re.search('-\d+', n.label) is not None]
+
+    def get_verb_instances(self):
+        v_instances = [n for n in self.nodes.values() if self.get_concept_label(n) in [v.label for v in self.get_verbs()]]
+        v_instances_with_args = [v for v in v_instances if len(self.get_child_edges(v, lambda e: 'ARG' in e.label)) > 0]
+        return v_instances_with_args
+
+    def get_subgraph_from_root(self, root):
+        visited = set()
+        queue = deque([root])
+        while len(queue) > 0:
+            node = queue.popleft()
+            visited.add(node)
+
+            for c in self.get_child_edges(node):
+                if c.in_node not in visited:
+                    queue.append(c.in_node)
+
+        edges = [e for e in self.edges if e.in_node in visited and e.out_node in visited]
+        return edges
+
     def reverse_arg_ofs(self):
         for e in self.edges:
             if re.match('ARG\d-of', e.label) is not None:
