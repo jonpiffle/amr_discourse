@@ -66,7 +66,7 @@ class AMRParser(object):
             n, remainder = self.extract_node(rest)
             self.graph.add_edge(self.nodes[-1], n, label=attr)
             self.nodes.append(n)
-        elif not (rest[0].isdigit() or rest[0] == '"'):
+        elif rest[0].isalpha():
             # this is a node that has already been instantiated
             span = re.search(r'^\w+\b', rest).span()
             node_name = rest[span[0]:span[1]]
