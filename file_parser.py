@@ -30,6 +30,9 @@ class FileParser(object):
                 else:
                     current_entry.append(line)
 
+            if len(current_entry) > 0:
+                amrs.append(self.parse_file_entry(current_entry))
+
         return amrs
 
     def parse_file_entry(self, lines):
