@@ -40,15 +40,20 @@ class AMRParagraph(object):
         self.amr_sentences = amr_sentences
         self.document_name = document_name
         self.amr_graph = None
+        self.s_graphs = None
 
     def _generate_amr_graph(self):
         start_graph = copy.deepcopy(self.amr_sentences[0].amr_graph)
+        self.s_graphs = [self.amr_sentences[0].amr_graph.edges]
         for sentence in self.amr_sentences[1:]:
-            start_graph.merge(sentence.amr_graph)
+            sentence_edges = start_graph.merge(sentence.amr_graph)
+            self.s_graphs.append(sentence_edges)
         self.amr_graph = start_graph
 
     def sentence_graphs(self):
-        return [s.amr_graph for s in self.amr_sentences]
+        if self.s_graphs is None:
+            self._generate_amr_graph()
+        return self.s_graphs
 
     def paragraph_graph(self):
         if self.amr_graph is None:
@@ -61,9 +66,7 @@ if __name__ == '__main__':
     paragraphs = swg.generate(k=5)
     paragraph = paragraphs[13]
     paragraph.paragraph_graph().draw()
+    print(paragraph.sentence_graphs())
     print(paragraph.amr_sentences[-1].entry_id)
-    for root in paragraph.paragraph_graph().get_roots():
-        print(root)
-        print(paragraph.paragraph_graph().get_subgraph_from_root(root))
     #print([n.label for n in paragraph.paragraph_graph().get_roots()])
 

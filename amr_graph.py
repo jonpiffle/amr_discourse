@@ -26,6 +26,12 @@ class AMRGraph(object):
         def __repr__(self):
             return "<Node: %s>" % self.label
 
+        def __eq__(self, other):
+            return self.label == other.label
+
+        def __hash__(self):
+            return hash(self.label)
+
     class Edge(object):
         """Directed, labeled edge"""
 
@@ -36,6 +42,12 @@ class AMRGraph(object):
 
         def __repr__(self):
             return "<Edge: %s -> %s, label: %s>" % (self.out_node.label, self.in_node.label, self.label)
+
+        def __eq__(self, other):
+            return self.out_node == other.out_node and self.in_node == other.in_node and self.label == other.label
+
+        def __hash__(self):
+            return hash(str(self))
 
     def __init__(self):
         self.nodes = {}
@@ -143,8 +155,11 @@ class AMRGraph(object):
                 rename_map[amr_node.label] = (equiv_node.label, 'existing')
                 amr_node.label = equiv_node.label
 
+        new_edges = []
         for edge in amr.edges:
-            self.add_edge(self.nodes[edge.out_node.label], self.nodes[edge.in_node.label], edge.label)
+            new_edge = self.add_edge(self.nodes[edge.out_node.label], self.nodes[edge.in_node.label], edge.label)
+            new_edges.append(new_edge)
+        return set(new_edges)
 
     def merge_node_attributes(self, node1, node2):
         node1.attributes.update(node2.attributes)
