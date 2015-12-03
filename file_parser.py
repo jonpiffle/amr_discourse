@@ -9,12 +9,18 @@ class FileParser(object):
     def __init__(self):
         pass
 
-    def parse(self, filename):
+    def parse(self, filename, limit=None):
         amrs = []
         with open(filename, 'r') as f:
             current_entry = []
 
             for line in f:
+
+                # allow for a limit. don't want to parse remainder if we have not parsed the whole file
+                if limit is not None and len(amrs) >= limit:
+                    current_entry = []
+                    break
+
                 line = line.strip()
                 if "# AMR release;" in line or line == '':
                     continue
@@ -77,5 +83,10 @@ class AMRSentence(object):
         self.document_name = entry_id.split('.')[0]
 
 if __name__ == '__main__':
-    entries = FileParser().parse('amr.txt')
-    print(entries[0].amr_graph.nodes['d'].edges)
+    entries = FileParser().parse('amr.txt', limit=1000)
+    s = [e for e in entries if e.entry_id == 'PROXY_AFP_ENG_20020115_0320.6'][0]
+    #s.amr_graph.draw()
+    s.amr_graph.remove_and()
+    #s.amr_graph.draw(filename='g2.gv')
+    n = list(s.amr_graph.nodes.values())[0]
+    print(s.amr_graph.deepcopy())
