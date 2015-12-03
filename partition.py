@@ -6,12 +6,12 @@ class Partition:
 
     def __init__(self, S):
         self.data = list(S)
-        self.m = len(S)
+        self.m = S.__len__()
         self.table = self.rgf_table()
 
     def __getitem__(self, i):
         #generates set partitions by index
-        if i > len(self) - 1:
+        if i > self.__len__() - 1:
              raise IndexError
         L =  self.unrank_rgf(i)
         result = self.as_set_partition(L)
