@@ -10,7 +10,8 @@ WHITESPACE = re.compile('\s+')
 AMR_NODE = re.compile('^\(({}+) / ({}+)(.*)'.format(NON_SPACE_OR_RPAREN,
                                                     NON_SPACE_OR_RPAREN))
 AMR_ATTR = re.compile('^:({}+)(.*)'.format(NON_SPACE_OR_RPAREN))
-AMR_ATTR_VALUE = re.compile('^([^ ]+) ?(.*)')
+AMR_QUOTE_ATTR_VALUE = re.compile(r'^("[^"]*") ?(.*)')
+AMR_REG_ATTR_VALUE = re.compile(r'^([^ ]+) ?(.*)')
 CLOSE_PARENS = re.compile('^(\)*).*')
 
 
@@ -77,7 +78,11 @@ class AMRParser(object):
                 label=attr,
             )
         else:
-            val_match = AMR_ATTR_VALUE.match(rest)
+            if rest[0] == '"':
+                val_matcher = AMR_QUOTE_ATTR_VALUE
+            else:
+                val_matcher = AMR_REG_ATTR_VALUE
+            val_match = val_matcher.match(rest)
             if not val_match:
                 raise Exception(rest)
 
