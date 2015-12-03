@@ -29,7 +29,7 @@ class FileParser(object):
             if len(current_entry) > 0:
                 amrs.append(self.parse_file_entry(current_entry))
 
-        return amrs
+        return [amr for amr in amrs if amr is not None]
 
     def parse_file_entry(self, lines):
         entry_id, entry_date, entry_type = self.parse_id_date_type(lines[0])
@@ -45,7 +45,11 @@ class FileParser(object):
 
         # preprocess amr graph
         amr_graph.reverse_arg_ofs()
-        amr_graph.remove_and()
+
+        try:
+            amr_graph.remove_and()
+        except RuntimeError:
+            return None
         
         return AMRSentence(entry_id, entry_date, entry_type, filename, sentence, amr_graph, amr_string)
 
