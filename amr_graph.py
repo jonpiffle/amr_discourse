@@ -5,32 +5,27 @@ from collections import deque
 class AMRGraph(object):
 
     class Node(object):
+        nid = 0
 
-        def __init__(self, label):
+        def __init__(self, label, attributes=None):
             self.label = label
-            self.edges = {}
-            self.attributes = {}
-
-        def add_edge(self, to, label=None):
-            if (to, label) in self.edges:
-                return self.edges[(to, label)]
-            self.edges[(to, label)] = AMRGraph.Edge(self, to, label)
-            return self.edges[(to, label)]
+            if attributes is None:
+                attributes = {}
+            self.attributes = attributes
+            self.nid = AMRGraph.Node.nid
+            AMRGraph.Node.nid += 1
 
         def add_attribute(self, attr, value):
             self.attributes[attr] = value
-
-        def attribute_set(self):
-            return set(self.attributes.items())
 
         def __repr__(self):
             return "<Node: %s>" % self.label
 
         def __eq__(self, other):
-            return self.label == other.label
+            return self.nid == other.nid
 
         def __hash__(self):
-            return hash(self.label)
+            return hash(self.nid)
 
     class Edge(object):
         """Directed, labeled edge"""
@@ -47,13 +42,13 @@ class AMRGraph(object):
             return self.out_node == other.out_node and self.in_node == other.in_node and self.label == other.label
 
         def __hash__(self):
-            return hash(str(self))
+            return hash(self.out_node) + hash(self.in_node)
 
     def __init__(self):
         self.nodes = {}
         self.edges = set()
 
-    def add_node(self, label):
+    def add_node(self, label, attributes=None):
         """
         Adds a node to the graph, if it's not already in the graph.
         Returns the node.
@@ -61,27 +56,22 @@ class AMRGraph(object):
         if isinstance(label, AMRGraph.Node):
             label, node = label.label, label
         else:
-            label, node = label, AMRGraph.Node(label)
+            label, node = label, AMRGraph.Node(label, attributes)
         self.nodes[label] = self.nodes.get(label, node)
         return self.nodes[label]
 
-    def add_edge(self, from_node, to_node, label=None):
-        edge = from_node.add_edge(to_node, label=label)
-        if edge is not None:
-            self.edges.add(edge)
+    def add_edge(self, from_node, to_node, label):
+        edge = AMRGraph.Edge(from_node, to_node, label)
+        self.edges.add(edge)
         return edge
 
     def delete_edge(self, edge):
-        for label, node in self.nodes.items():
-            if (edge.in_node, edge.label) in node.edges:
-                del node.edges[(edge.in_node, edge.label)]
         self.edges.discard(edge)
 
     def delete_node(self, node):
-        for c_edge in self.get_child_edges(node):
-            self.delete_edge(c_edge)
-        for p_edge in self.get_parent_edges(node):
-            self.delete_edge(p_edge)
+        for edge in self.get_child_edges(node) + self.get_parent_edges(node):
+            self.delete_edge(edge)
+
         if node.label in self.nodes:
             del self.nodes[node.label]
 
@@ -247,8 +237,10 @@ class AMRGraph(object):
             # delete all edges from 'and' instance
             for c_edge in c_edges:
                 self.delete_edge(c_edge)
+
             # delete and instance
             self.delete_node(and_instance)
+
         # delete 'and' node
         if 'and' in self.nodes:
             self.delete_node(self.nodes['and'])
@@ -256,10 +248,9 @@ class AMRGraph(object):
     def copy_traversal(self, traversal):
         new_traversal = []
         for edge in traversal:
-            out_node = self.add_node(self.find_safe_rename(edge.out_node.label))
-
-            in_node = self.add_node(self.find_safe_rename(edge.in_node.label))
-            new_edge = self.add_edge(out_node, in_node, label=edge.label)
+            out_node = self.add_node(self.find_safe_rename(edge.out_node.label), edge.out_node.attributes)
+            in_node = self.add_node(self.find_safe_rename(edge.in_node.label), edge.in_node.attributes)
+            new_edge = self.add_edge(out_node, in_node, edge.label)
             new_traversal.append(new_edge)
 
             # copy other edges along traversal; however, point to original child nodes
@@ -315,6 +306,20 @@ class AMRGraph(object):
             count += 1
             new_name = "{}{}".format(label, count)
         return new_name
+
+    def deepcopy(self):
+        new_graph = AMRGraph()
+
+        node_map = {}
+        for n in self.nodes.values():
+            new_node = new_graph.add_node(n.label, n.attributes)
+            new_node.attributes = dict(n.attributes)
+            node_map[n] = new_node
+
+        for e in self.edges:
+            new_graph.add_edge(node_map[e.out_node], node_map[e.in_node], e.label)
+
+        return new_graph
 
     def draw(self, filename='g.gv'):
         def add_nodes(graph, nodes):
