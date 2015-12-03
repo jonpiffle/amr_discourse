@@ -20,6 +20,7 @@ class AMRParser(object):
     def __init__(self):
         self.graph = AMRGraph()
         self.nodes = deque()
+        self.eval_later = {}
 
     def parse(self, amr):
         """
@@ -54,6 +55,12 @@ class AMRParser(object):
                                      for n in [instance, sense]]
         self.graph.add_edge(instance_node, sense_node, label='instance')
 
+        if instance in self.eval_later:
+            # pop the list from the dict, so we don't ever evaluate it again
+            later_list = self.eval_later.pop(instance)
+            for func, args in later_list:
+                func(instance_node, *args)
+
         return instance_node, rest.strip()
 
     def extract_attr(self, tree):
@@ -68,15 +75,29 @@ class AMRParser(object):
             self.graph.add_edge(self.nodes[-1], n, label=attr)
             self.nodes.append(n)
         elif rest[0].isalpha():
-            # this is a node that has already been instantiated
+            # this is a node that has/will be instantiated elsewhere
             span = re.search(r'^\w+\b', rest).span()
             node_name = rest[span[0]:span[1]]
             remainder = rest[span[1]:].strip()
-            self.graph.add_edge(
-                self.nodes[-1],
-                self.graph.nodes[node_name],
-                label=attr,
-            )
+            if node_name not in self.graph.nodes:
+                # the node has not actually been instantiated. store a lambda
+                # and relevant args to insert the relevant edge whenever the
+                # node actually gets instantiated
+                later_list = self.eval_later.get(node_name, [])
+                later_func = lambda node, other, label: self.graph.add_edge(
+                    other,
+                    node,
+                    label=label,
+                )
+                later_args = [self.nodes[-1], attr]
+                later_list.append((later_func, later_args))
+                self.eval_later[node_name] = later_list
+            else:
+                self.graph.add_edge(
+                    self.nodes[-1],
+                    self.graph.nodes[node_name],
+                    label=attr,
+                )
         else:
             if rest[0] == '"':
                 val_matcher = AMR_QUOTE_ATTR_VALUE
