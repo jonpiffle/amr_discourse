@@ -1,4 +1,4 @@
-import copy, itertools
+import itertools
 
 from file_parser import FileParser
 
@@ -43,10 +43,12 @@ class AMRParagraph(object):
         self.s_graphs = None
 
     def _generate_amr_graph(self):
-        start_graph = copy.deepcopy(self.amr_sentences[0].amr_graph)
+        print('generate', self.amr_sentences[0].entry_id)
+        start_graph = self.amr_sentences[0].amr_graph.deepcopy()
         self.s_graphs = [self.amr_sentences[0].amr_graph.edges]
         for sentence in self.amr_sentences[1:]:
-            sentence_edges = start_graph.merge(sentence.amr_graph)
+            print('generate', sentence.entry_id)
+            sentence_edges = start_graph.merge(sentence.amr_graph.deepcopy())
             self.s_graphs.append(sentence_edges)
         self.amr_graph = start_graph
 
