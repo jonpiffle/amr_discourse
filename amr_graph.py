@@ -2,47 +2,47 @@ import re
 import graphviz as gv
 from collections import deque
 
+class Node(object):
+    nid = 0
+
+    def __init__(self, label, attributes=None):
+        self.label = label
+        if attributes is None:
+            attributes = {}
+        self.attributes = attributes
+        self.nid = Node.nid
+        Node.nid += 1
+
+    def add_attribute(self, attr, value):
+        self.attributes[attr] = value
+
+    def __repr__(self):
+        return "<Node: %s>" % self.label
+
+    def __eq__(self, other):
+        return self.nid == other.nid
+
+    def __hash__(self):
+        return hash(self.nid)
+
+class Edge(object):
+    """Directed, labeled edge"""
+
+    def __init__(self, out_node, in_node, label):
+        self.in_node = in_node
+        self.out_node = out_node
+        self.label = label
+
+    def __repr__(self):
+        return "<Edge: %s -> %s, label: %s>" % (self.out_node.label, self.in_node.label, self.label)
+
+    def __eq__(self, other):
+        return self.out_node == other.out_node and self.in_node == other.in_node and self.label == other.label
+
+    def __hash__(self):
+        return hash(self.out_node) + hash(self.in_node)
+
 class AMRGraph(object):
-
-    class Node(object):
-        nid = 0
-
-        def __init__(self, label, attributes=None):
-            self.label = label
-            if attributes is None:
-                attributes = {}
-            self.attributes = attributes
-            self.nid = AMRGraph.Node.nid
-            AMRGraph.Node.nid += 1
-
-        def add_attribute(self, attr, value):
-            self.attributes[attr] = value
-
-        def __repr__(self):
-            return "<Node: %s>" % self.label
-
-        def __eq__(self, other):
-            return self.nid == other.nid
-
-        def __hash__(self):
-            return hash(self.nid)
-
-    class Edge(object):
-        """Directed, labeled edge"""
-
-        def __init__(self, out_node, in_node, label):
-            self.in_node = in_node
-            self.out_node = out_node
-            self.label = label
-
-        def __repr__(self):
-            return "<Edge: %s -> %s, label: %s>" % (self.out_node.label, self.in_node.label, self.label)
-
-        def __eq__(self, other):
-            return self.out_node == other.out_node and self.in_node == other.in_node and self.label == other.label
-
-        def __hash__(self):
-            return hash(self.out_node) + hash(self.in_node)
 
     def __init__(self):
         self.nodes = {}
@@ -53,15 +53,15 @@ class AMRGraph(object):
         Adds a node to the graph, if it's not already in the graph.
         Returns the node.
         """
-        if isinstance(label, AMRGraph.Node):
+        if isinstance(label, Node):
             label, node = label.label, label
         else:
-            label, node = label, AMRGraph.Node(label, attributes)
+            label, node = label, Node(label, attributes)
         self.nodes[label] = self.nodes.get(label, node)
         return self.nodes[label]
 
     def add_edge(self, from_node, to_node, label):
-        edge = AMRGraph.Edge(from_node, to_node, label)
+        edge = Edge(from_node, to_node, label)
         self.edges.add(edge)
         return edge
 
@@ -313,7 +313,6 @@ class AMRGraph(object):
         node_map = {}
         for n in self.nodes.values():
             new_node = new_graph.add_node(n.label, n.attributes)
-            new_node.attributes = dict(n.attributes)
             node_map[n] = new_node
 
         for e in self.edges:

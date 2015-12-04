@@ -1,15 +1,20 @@
 from __future__ import print_function
 
-import re
+import re, os, pickle
 
 from amr_parser import AMRParser
+from amr_graph import Edge, Node, AMRGraph
 
 class FileParser(object):
 
     def __init__(self):
         pass
 
-    def parse(self, filename, limit=None):
+    def parse(self, filename, limit=None, use_cached=True):
+        pickle_filename = "%s_%d.pickle" % (filename, limit)
+        if use_cached and os.path.exists(pickle_filename):
+            return pickle.load(open(pickle_filename, 'rb'))
+
         amrs = []
         with open(filename, 'r') as f:
             current_entry = []
@@ -35,7 +40,10 @@ class FileParser(object):
             if len(current_entry) > 0:
                 amrs.append(self.parse_file_entry(current_entry))
 
-        return [amr for amr in amrs if amr is not None]
+        amrs = [amr for amr in amrs if amr is not None]
+        pickle.dump(amrs, open(pickle_filename, 'wb'))
+
+        return amrs
 
     def parse_file_entry(self, lines):
         entry_id, entry_date, entry_type = self.parse_id_date_type(lines[0])
