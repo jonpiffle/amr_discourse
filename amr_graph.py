@@ -187,6 +187,7 @@ class AMRGraph(object):
 
         return not self.conflicting_attributes(self_node, amr_node) and all(self.nodes_equiv(self_c, amr, amr_c) for self_c, amr_c in child_pairs)
 
+    '''
     def get_parent_traversals(self, node):
         """
         Given a node, returns a list of 'traversals' (ordered lists of edges) representing all possible paths
@@ -206,20 +207,36 @@ class AMRGraph(object):
         else:
             for p_edge in self.get_parent_edges(node):
                 self._get_parent_traversals(p_edge.out_node, [t + [p_edge] for t in traversals], final_traversals)
+    '''
+
+    def get_parent_traversal(self, node):
+        visited = set()
+        queue = deque([node])
+        while len(queue) > 0:
+            node = queue.popleft()
+            visited.add(node)
+
+            for c in self.get_parent_edges(node):
+                if c.out_node not in visited:
+                    queue.append(c.out_node)
+
+        edges = [e for e in self.edges if e.in_node in visited and e.out_node in visited]
+        return edges
 
     def remove_and(self):
         and_instances = self.get_and_instances()
         for and_instance in and_instances:
-            parent_traversals = self.get_parent_traversals(and_instance)
+            traversal = self.get_parent_traversal(and_instance)
             c_edges = self.get_child_edges(and_instance, lambda e: e.label != 'instance')
 
-            for traversal in parent_traversals:
-                for c_edge in c_edges:
-                    # copy parent traversal without first edge (first edge goes to 'and' instance)
-                    new_traversal = self.copy_traversal(traversal)
+            for c_edge in c_edges:
+                # copy parent traversal without first edge (first edge goes to 'and' instance)
+                new_traversal = self.copy_traversal(traversal)
 
-                    if len(new_traversal) > 0:
-                        last_edge = new_traversal[0]
+                if len(new_traversal) > 0:
+                    last_edge = new_traversal[0]
+                    last_edges = [e for e in new_traversal if e.in_node == last_edge.in_node]
+                    for last_edge in last_edges:
                         # add edge from immediate parent of 'and' instance to child of 'and' instance
                         self.add_edge(last_edge.out_node, c_edge.in_node, label=traversal[0].label)
                         # add back other sibling edges
@@ -229,10 +246,10 @@ class AMRGraph(object):
                         self.delete_node(last_edge.in_node)
                         self.delete_edge(last_edge)
 
-                # delete original parent traversal after it has been copied for each child
-                for edge in traversal:
-                    self.delete_edge(edge)
-                    self.delete_node(edge.out_node)
+            # delete original parent traversal after it has been copied for each child
+            for edge in traversal:
+                self.delete_edge(edge)
+                self.delete_node(edge.out_node)
 
             # delete all edges from 'and' instance
             for c_edge in c_edges:
@@ -241,15 +258,23 @@ class AMRGraph(object):
             # delete and instance
             self.delete_node(and_instance)
 
-        # delete 'and' node
+       # delete 'and' node
         if 'and' in self.nodes:
             self.delete_node(self.nodes['and'])
 
     def copy_traversal(self, traversal):
         new_traversal = []
+        
+        added_nodes = set()
         for edge in traversal:
-            out_node = self.add_node(self.find_safe_rename(edge.out_node.label), edge.out_node.attributes)
-            in_node = self.add_node(self.find_safe_rename(edge.in_node.label), edge.in_node.attributes)
+            if edge.out_node not in added_nodes:
+                out_node = self.add_node(self.find_safe_rename(edge.out_node.label), edge.out_node.attributes)
+                added_nodes.add(edge.out_node)
+
+            if edge.in_node not in added_nodes:
+                in_node = self.add_node(self.find_safe_rename(edge.in_node.label), edge.in_node.attributes)
+                added_nodes.add(edge.in_node)
+
             new_edge = self.add_edge(out_node, in_node, edge.label)
             new_traversal.append(new_edge)
 
