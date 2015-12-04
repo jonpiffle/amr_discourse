@@ -10,8 +10,8 @@ class FileParser(object):
     def __init__(self):
         pass
 
-    def parse(self, filename, limit=None, use_cached=True):
-        pickle_filename = "%s_%d.pickle" % (filename, limit)
+    def parse(self, filename, limit=None, use_cached=False):
+        pickle_filename = "%s_%d.pickle" % (filename, limit) if limit is not None else filename + '.pickle'
         if use_cached and os.path.exists(pickle_filename):
             return pickle.load(open(pickle_filename, 'rb'))
 
@@ -92,9 +92,27 @@ class AMRSentence(object):
 
 if __name__ == '__main__':
     entries = FileParser().parse('amr.txt', limit=1000)
-    s = [e for e in entries if e.entry_id == 'PROXY_AFP_ENG_20020115_0320.6'][0]
-    #s.amr_graph.draw()
+    s = [e for e in entries if e.entry_id == 'PROXY_AFP_ENG_20020105_0162.13'][0]
+    s2 = [e for e in entries if e.entry_id == 'PROXY_AFP_ENG_20020105_0162.14'][0]
+
+    #s2.amr_graph.remove_and()
+
+    print(s.amr_graph.topological_sort())
+    s.amr_graph.draw()
     s.amr_graph.remove_and()
+    s.amr_graph.draw(filename='g2.gv')
+
+    for n in s.amr_graph.nodes.values():
+        s.amr_graph.get_concept_label(n)
+
+    #s.amr_graph.draw()
+    #s.amr_graph.merge(s2.amr_graph)
+    #s.amr_graph.draw(filename='g3.gv')
+
+    #s.amr_graph.remove_and()
     #s.amr_graph.draw(filename='g2.gv')
+    #print(s.amr_graph.nodes['a1'], s.amr_graph.get_child_edges(s.amr_graph.nodes['a1']))
+
+    #print(s.amr_graph.get_parent_traversal(s.amr_graph.get_and_instances()[0]))
     n = list(s.amr_graph.nodes.values())[0]
     print(s.amr_graph.deepcopy())
