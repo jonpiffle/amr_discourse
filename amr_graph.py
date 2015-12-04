@@ -103,6 +103,8 @@ class AMRGraph(object):
         elif len(concept_edges) == 1:
             return concept_edges[0].in_node.label
         else:
+            print(entity)
+            print(self.get_child_edges(entity))
             raise ValueError('Entity has multiple instance edges')
 
     def is_concept_node(self, entity):
@@ -224,27 +226,27 @@ class AMRGraph(object):
         return edges
 
     def remove_and(self):
-        and_instances = self.get_and_instances()
-        for and_instance in and_instances:
+        while(len(self.get_and_instances()) > 0):
+            topological_order = self.topological_sort()
+            and_instance = sorted(self.get_and_instances(), key=lambda a: topological_order.index(a))[0]
             traversal = self.get_parent_traversal(and_instance)
             c_edges = self.get_child_edges(and_instance, lambda e: e.label != 'instance')
 
             for c_edge in c_edges:
-                # copy parent traversal without first edge (first edge goes to 'and' instance)
-                new_traversal = self.copy_traversal(traversal)
+                # copy parent traversal
+                new_traversal, rename_map, reverse_edge_map = self.copy_traversal(traversal)
 
                 if len(new_traversal) > 0:
-                    last_edge = new_traversal[0]
-                    last_edges = [e for e in new_traversal if e.in_node == last_edge.in_node]
+                    last_edges = self.get_parent_edges(self.nodes[rename_map[and_instance.label]])
                     for last_edge in last_edges:
+                        corresponding_edge = reverse_edge_map[last_edge]
                         # add edge from immediate parent of 'and' instance to child of 'and' instance
-                        self.add_edge(last_edge.out_node, c_edge.in_node, label=traversal[0].label)
+                        self.add_edge(last_edge.out_node, c_edge.in_node, label=corresponding_edge.label)
                         # add back other sibling edges
-                        for other_edge in self.get_child_edges(traversal[0].out_node, lambda e: e.label != traversal[0].label):
+                        for other_edge in self.get_child_edges(corresponding_edge.out_node, lambda e: e.label != corresponding_edge.label):
                             self.add_edge(last_edge.out_node, other_edge.in_node, other_edge.label)
-                        # delete extraneous edge and node
+                        # delete extraneous 'and' node (and associated edges)
                         self.delete_node(last_edge.in_node)
-                        self.delete_edge(last_edge)
 
             # delete original parent traversal after it has been copied for each child
             for edge in traversal:
@@ -262,27 +264,57 @@ class AMRGraph(object):
         if 'and' in self.nodes:
             self.delete_node(self.nodes['and'])
 
+    def is_ancestor_of(self, node1, node2):
+        """Returns True is node1 is an ancestor of node 2"""
+        traversal = self.get_parent_traversal(node2)
+        ancestor_nodes = set([e.in_node for e in traversal]) | set([e.out_node for e in traversal])
+        return node1 in nodes
+
+    def topological_sort(self):
+        """
+        Returns the topological ordering of the nodes; see: https://en.wikipedia.org/wiki/Topological_sorting#Algorithms.
+        """
+        L = []
+        E = set(self.edges)
+        S = self.get_roots()
+        while len(S) > 0:
+            n = S.pop()
+            L.append(n)
+            c_edges = [e for e in E if e.out_node == n]
+            for c_edge in c_edges:
+                E.remove(c_edge)
+                m = c_edge.in_node
+                if len([e for e in E if e.in_node == m]) == 0:
+                    S.append(m)
+        return L
+
     def copy_traversal(self, traversal):
         new_traversal = []
-        
-        added_nodes = set()
-        for edge in traversal:
-            if edge.out_node not in added_nodes:
-                out_node = self.add_node(self.find_safe_rename(edge.out_node.label), edge.out_node.attributes)
-                added_nodes.add(edge.out_node)
+        rename_map = {}
+        reverse_edge_map = {}
 
-            if edge.in_node not in added_nodes:
+        for edge in traversal:
+            if edge.out_node.label not in rename_map:
+                out_node = self.add_node(self.find_safe_rename(edge.out_node.label), edge.out_node.attributes)
+                rename_map[edge.out_node.label] = out_node.label
+            else:
+                out_node = self.nodes[rename_map[edge.out_node.label]]
+
+            if edge.in_node.label not in rename_map:
                 in_node = self.add_node(self.find_safe_rename(edge.in_node.label), edge.in_node.attributes)
-                added_nodes.add(edge.in_node)
+                rename_map[edge.in_node.label] = in_node.label
+            else:
+                in_node = self.nodes[rename_map[edge.in_node.label]]
 
             new_edge = self.add_edge(out_node, in_node, edge.label)
+            reverse_edge_map[new_edge] = edge
             new_traversal.append(new_edge)
 
             # copy other edges along traversal; however, point to original child nodes
             for other_edge in self.get_child_edges(edge.out_node, lambda e: e != edge):
-                self.add_edge(out_node, other_edge.in_node, other_edge.label)
+                new_edge = self.add_edge(out_node, other_edge.in_node, other_edge.label)
 
-        return new_traversal
+        return new_traversal, rename_map, reverse_edge_map
 
     def get_and_instances(self):
         and_nodes = [n for n in self.nodes.values() if n.label == 'and']
