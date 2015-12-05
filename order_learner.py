@@ -1,22 +1,24 @@
 import numpy as np
 import numpy.random
 
+from amr_paragraph import AMRParagraph
+
 
 def reorder(sentences):
-    ordering = np.shuffle(sentences)
-    if ordering == np.range(len(sentences)):
+    ordering = np.arange(len(sentences))
+    np.random.shuffle(ordering)
+    if np.all(ordering == np.arange(len(sentences))):
         return sentences, False
     else:
         return sentences[ordering], True
 
 
-def add_negative_examples(paragraphs, number):
-    reorder_prob = len(paragraphs) / number
+def add_negative_examples(paragraphs, reorder_prob):
     examples, labels = [], []
     for p in paragraphs:
         examples.append(p)
         labels.append(1)
-        if np.rand() <= reorder_prob:
+        if np.random.rand() < reorder_prob:
             sentences, success = reorder(np.array(p.amr_sentences))
             if success:
                 new_paragraph = AMRParagraph(

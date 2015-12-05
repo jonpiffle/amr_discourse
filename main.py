@@ -36,6 +36,8 @@ def main(**kwargs):
 
     learner = get_learner(**kwargs)(**kwargs)
     train_window, labels = learner.transform(train_window, **kwargs)
+    print(train_window)
+    print(labels)
     # test_window, labels = learner.transform(test_window, **kwargs)
     learner.train(train_window, labels)
     # learner.evaluate(test_window, labels)
@@ -64,6 +66,7 @@ if __name__ == '__main__':
         '-r',
         '--reorder',
         type=probability,
+        default=0,
         help='probability of reordering a sentence',
     )
 
