@@ -20,7 +20,7 @@ class Node(object):
         return "<Node: %s>" % self.label
 
     def __eq__(self, other):
-        return self.nid == other.nid
+        return isinstance(other, Node) and self.nid == other.nid
 
     def __hash__(self):
         return hash(self.nid)
@@ -37,7 +37,7 @@ class Edge(object):
         return "<Edge: %s -> %s, label: %s>" % (self.out_node.label, self.in_node.label, self.label)
 
     def __eq__(self, other):
-        return self.out_node == other.out_node and self.in_node == other.in_node and self.label == other.label
+        return isinstance(other, Edge) and self.out_node == other.out_node and self.in_node == other.in_node and self.label == other.label
 
     def __hash__(self):
         return hash(self.out_node) + hash(self.in_node)
