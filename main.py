@@ -1,61 +1,50 @@
 #!/usr/bin/env python
 from __future__ import division
 
+import argparse
+
 import numpy as np
 import numpy.random
 
 from amr_paragraph import SlidingWindowGenerator
+from order_learner import OrderLearner
 from file_parser import FileParser
 
 
+LEARNERS = {
+    'ordering': OrderLearner,
+}
+
+
+def probability(string):
+    value = float(string)
+    if not (0 <= value <= 1):
+        message = '{} must be a probability'.format(value)
+        raise argparse.ArgumentTypeError(message)
+    return value
+
+
 def get_learner(**kwargs):
-    # TODO
-    pass
-
-
-def reorder(sentences):
-    ordering = np.shuffle(sentences)
-    if ordering == np.range(len(sentences)):
-        return sentences, False
-    else:
-        return sentences[ordering], True
-
-
-def add_negative_examples(paragraphs, number):
-    reorder_prob = len(paragraphs) / number
-    examples, labels = [], []
-    for p in paragraphs:
-        examples.append(p)
-        labels.append(1)
-        if np.rand() <= reorder_prob:
-            sentences, success = reorder(np.array(p.amr_sentences))
-            if success:
-                new_paragraph = AMRParagraph(
-                    p.document_name,
-                    sentences,
-                )
-                examples.append(new_paragraph)
-                labels.append(0)
-    return np.array(examples), np.array(labels)
+    return LEARNERS[kwargs['learner']]
 
 
 def main(**kwargs):
     train_data = FileParser().parse(kwargs.pop('train_file'))
     train_window = SlidingWindowGenerator(train_data).generate(k=5)
-    test_data = FileParser().parse(kwargs.pop('test_file'))
-    test_window = SlidingWindowGenerator(test_data).generate(k=5)
+    # test_data = FileParser().parse(kwargs.pop('test_file'))
+    # test_window = SlidingWindowGenerator(test_data).generate(k=5)
 
-    learner = get_learner(**kwargs)
-    learner.train(train_window)
-    learner.evaluate(test_window)
+    learner = get_learner(**kwargs)(**kwargs)
+    train_window, labels = learner.transform(train_window, **kwargs)
+    # test_window, labels = learner.transform(test_window, **kwargs)
+    learner.train(train_window, labels)
+    # learner.evaluate(test_window, labels)
 
 
 if __name__ == '__main__':
-    import argparse
     parser = argparse.ArgumentParser(
         prog='main.py',
         description='learn some discourse',
-        argument_default=argparse.SUPRESS,
     )
 
     # TODO: add arguments for different learners
@@ -63,6 +52,20 @@ if __name__ == '__main__':
 
     parser.add_argument('-t', '--train_file', default='amr.txt')
     parser.add_argument('-e', '--test_file', default='amr_test.txt')
+
+    subparsers = parser.add_subparsers(
+        help='which part of the learning pipeline to run',
+        dest='learner',
+        metavar='learner',
+    )
+
+    subgraph_ordering_parser = subparsers.add_parser('ordering')
+    subgraph_ordering_parser.add_argument(
+        '-r',
+        '--reorder',
+        type=probability,
+        help='probability of reordering a sentence',
+    )
 
     args = parser.parse_args()
     main(**vars(args))
