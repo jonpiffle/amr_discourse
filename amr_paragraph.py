@@ -1,4 +1,4 @@
-import itertools
+import itertools, copy
 
 from file_parser import FileParser
 
@@ -37,18 +37,21 @@ class AMRParagraph(object):
     def __init__(self, document_name, amr_sentences=None):
         if amr_sentences is None:
             amr_sentences = []
+        for s in amr_sentences:
+            s.amr_graph = s.amr_graph.deepcopy()
         self.amr_sentences = amr_sentences
         self.document_name = document_name
         self.amr_graph = None
         self.s_graphs = None
 
     def _generate_amr_graph(self):
-        print('generate', self.amr_sentences[0].entry_id)
+        #print(self.amr_sentences[0].entry_id)
         start_graph = self.amr_sentences[0].amr_graph.deepcopy()
-        self.s_graphs = [self.amr_sentences[0].amr_graph.edges]
+        self.s_graphs = [start_graph.edges]
         for sentence in self.amr_sentences[1:]:
-            print('generate', sentence.entry_id)
-            sentence_edges = start_graph.merge(sentence.amr_graph.deepcopy())
+            #print(sentence.entry_id)
+            #sentence_edges = start_graph.merge(sentence.amr_graph.deepcopy())
+            sentence_edges = start_graph.merge(sentence.amr_graph)
             self.s_graphs.append(sentence_edges)
         self.amr_graph = start_graph
 
@@ -63,7 +66,7 @@ class AMRParagraph(object):
         return self.amr_graph
 
 if __name__ == '__main__':
-    entries = FileParser().parse('amr.txt')
+    entries = FileParser().parse('amr.txt', limit=1000)
     swg = SlidingWindowGenerator(entries)
     paragraphs = swg.generate(k=5)
     paragraph = paragraphs[13]
