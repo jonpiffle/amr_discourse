@@ -1,6 +1,6 @@
-import re
+import re, copy
 import graphviz as gv
-from collections import deque
+from collections import deque, defaultdict
 
 class Node(object):
     nid = 0
@@ -53,6 +53,16 @@ class AMRGraph(object):
             edges = set()
         self.edges = edges
 
+        # edges where node is the parent
+        self.child_edge_dict = defaultdict(set)
+
+        # edges where node is the child
+        self.parent_edge_dict = defaultdict(set)
+
+        for e in edges:
+            self.child_edge_dict[e.out_node].add(e)
+            self.parent_edge_dict[e.in_node].add(e)
+
     def add_node(self, label, attributes=None):
         """
         Adds a node to the graph, if it's not already in the graph.
@@ -68,10 +78,14 @@ class AMRGraph(object):
     def add_edge(self, from_node, to_node, label):
         edge = Edge(from_node, to_node, label)
         self.edges.add(edge)
+        self.child_edge_dict[edge.out_node].add(edge)
+        self.parent_edge_dict[edge.in_node].add(edge)
         return edge
 
     def delete_edge(self, edge):
         self.edges.discard(edge)
+        self.child_edge_dict[edge.out_node].discard(edge)
+        self.parent_edge_dict[edge.in_node].discard(edge)
 
     def delete_node(self, node):
         for edge in self.get_child_edges(node) + self.get_parent_edges(node):
@@ -80,20 +94,23 @@ class AMRGraph(object):
         if node.label in self.nodes:
             del self.nodes[node.label]
 
+        if node in self.child_edge_dict:
+            del self.child_edge_dict[node]
+
+        if node in self.parent_edge_dict:
+            del self.parent_edge_dict[node]
+
     def get_parent_edges(self, node, f=lambda e: True):
-        return self.get_edges(lambda e: e.in_node == node and f(e))
+        return [e for e in self.parent_edge_dict[node] if f(e)]
 
     def get_parents(self, node, f=lambda e: True):
         return [e.out_node for e in self.get_parent_edges(node, f)]
 
     def get_child_edges(self, node, f=lambda e: True):
-        return self.get_edges(lambda e: e.out_node == node and f(e))
+        return [e for e in self.child_edge_dict[node] if f(e)]
 
     def get_children(self, node, f=lambda e: True):
         return [e.in_node for e in self.get_child_edges(node, f)]
-
-    def get_edges(self, f):
-        return list(filter(f, self.edges))
 
     def get_concept_label(self, entity):
         """
@@ -280,7 +297,7 @@ class AMRGraph(object):
         Returns the topological ordering of the nodes; see: https://en.wikipedia.org/wiki/Topological_sorting#Algorithms.
         """
         L = []
-        E = set(self.edges)
+        E = copy.copy(self.edges)
         S = self.get_roots()
         while len(S) > 0:
             n = S.pop()
@@ -358,8 +375,8 @@ class AMRGraph(object):
     def reverse_arg_ofs(self):
         for e in self.edges:
             if re.match('ARG\d-of', e.label) is not None:
-                e.label = e.label.replace('-of', '')
-                e.out_node, e.in_node = e.in_node, e.out_node
+                self.delete_edge(e)
+                self.add_edge(e.in_node, e.out_node, e.label.replace('-of', ''))
 
     def find_safe_rename(self, label):
         count = 1
