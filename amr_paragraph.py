@@ -47,12 +47,12 @@ class AMRParagraph(object):
     def _generate_amr_graph(self):
         #print(self.amr_sentences[0].entry_id)
         start_graph = self.amr_sentences[0].amr_graph.deepcopy()
-        self.s_graphs = [start_graph.edges]
+        self.s_graphs = [start_graph]
         for sentence in self.amr_sentences[1:]:
             #print(sentence.entry_id)
             #sentence_edges = start_graph.merge(sentence.amr_graph.deepcopy())
-            sentence_edges = start_graph.merge(sentence.amr_graph)
-            self.s_graphs.append(sentence_edges)
+            sentence_graph = start_graph.merge(sentence.amr_graph)
+            self.s_graphs.append(sentence_graph)
         self.amr_graph = start_graph
 
     def sentence_graphs(self):
@@ -70,8 +70,9 @@ if __name__ == '__main__':
     swg = SlidingWindowGenerator(entries)
     paragraphs = swg.generate(k=5)
     paragraph = paragraphs[13]
-    paragraph.paragraph_graph().draw()
+    #paragraph.paragraph_graph().draw()
     print(paragraph.sentence_graphs())
     print(paragraph.amr_sentences[-1].entry_id)
+    paragraph.sentence_graphs()[0].draw()
     #print([n.label for n in paragraph.paragraph_graph().get_roots()])
 

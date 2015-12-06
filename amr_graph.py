@@ -44,9 +44,14 @@ class Edge(object):
 
 class AMRGraph(object):
 
-    def __init__(self):
-        self.nodes = {}
-        self.edges = set()
+    def __init__(self, nodes=None, edges=None):
+        if nodes is None:
+            nodes = {}
+        self.nodes = nodes
+
+        if edges is None:
+            edges = set()
+        self.edges = edges
 
     def add_node(self, label, attributes=None):
         """
@@ -151,7 +156,7 @@ class AMRGraph(object):
         for edge in amr.edges:
             new_edge = self.add_edge(self.nodes[edge.out_node.label], self.nodes[edge.in_node.label], edge.label)
             new_edges.append(new_edge)
-        return set(new_edges)
+        return self.get_subgraph(set(new_edges))
 
     def merge_node_attributes(self, node1, node2):
         node1.attributes.update(node2.attributes)
@@ -223,7 +228,7 @@ class AMRGraph(object):
                     queue.append(c.out_node)
 
         edges = [e for e in self.edges if e.in_node in visited and e.out_node in visited]
-        return edges
+        return set(edges)
 
     def remove_and(self):
         while(len(self.get_and_instances()) > 0):
@@ -347,8 +352,8 @@ class AMRGraph(object):
                 if c.in_node not in visited:
                     queue.append(c.in_node)
 
-        edges = [e for e in self.edges if e.in_node in visited and e.out_node in visited]
-        return edges
+        edges = set([e for e in self.edges if e.in_node in visited and e.out_node in visited])
+        return self.get_subgraph(edges)
 
     def reverse_arg_ofs(self):
         for e in self.edges:
@@ -376,6 +381,11 @@ class AMRGraph(object):
             new_graph.add_edge(node_map[e.out_node], node_map[e.in_node], e.label)
 
         return new_graph
+
+    def get_subgraph(self, edge_set):
+        nodes = set([e.in_node for e in edge_set]) | set([e.out_node for e in edge_set])
+        node_dict = {n.label: n for n in nodes}
+        return AMRGraph(nodes=nodes, edges=edge_set)
 
     def draw(self, filename='g.gv'):
         def add_nodes(graph, nodes):
