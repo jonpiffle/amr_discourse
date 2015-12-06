@@ -38,8 +38,6 @@ class AMRParagraph(object):
     def __init__(self, document_name, amr_sentences=None):
         if amr_sentences is None:
             amr_sentences = []
-        for s in amr_sentences:
-            s.amr_graph = s.amr_graph.deepcopy()
         self.amr_sentences = amr_sentences
         self.document_name = document_name
         self.amr_graph = None
@@ -51,7 +49,6 @@ class AMRParagraph(object):
         self.s_graphs = []
         for sentence in self.amr_sentences:
             #print(sentence.entry_id)
-            #sentence_edges = start_graph.merge(sentence.amr_graph.deepcopy())
             sentence_graph = start_graph.merge(sentence.amr_graph)
             self.s_graphs.append(sentence_graph)
         self.amr_graph = start_graph
