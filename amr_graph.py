@@ -385,7 +385,13 @@ class AMRGraph(object):
     def get_subgraph(self, edge_set):
         nodes = set([e.in_node for e in edge_set]) | set([e.out_node for e in edge_set])
         node_dict = {n.label: n for n in nodes}
-        return AMRGraph(nodes=nodes, edges=edge_set)
+        return AMRGraph(nodes=node_dict, edges=edge_set)
+
+    def union_subgraphs(self, subgraphs):
+        edge_set = set()
+        for sub in subgraphs:
+            edge_set.update(sub.edges)
+        return AMRGraph.get_subgraph(edge_set)
 
     def draw(self, filename='g.gv'):
         def add_nodes(graph, nodes):
