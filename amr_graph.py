@@ -334,7 +334,7 @@ class AMRGraph(object):
         return [n for n in self.nodes.values() if len(self.get_parent_edges(n)) == 0]
 
     def get_verbs(self):
-        return [n for n in self.nodes.values() if re.search('-\d+', n.label) is not None]
+        return set([n for n in self.nodes.values() if re.search('-\d+', n.label) is not None])
 
     def get_verb_instances(self):
         v_instances = [n for n in self.nodes.values() if self.get_concept_label(n) in [v.label for v in self.get_verbs()]]
