@@ -5,6 +5,7 @@ from itertools import combinations
 import numpy as np
 import numpy.random
 import sklearn.linear_model as lm
+from simanneal import Annealer
 
 from amr_paragraph import AMRParagraph
 from subgraph_learner import generate_paragraphs
@@ -89,6 +90,27 @@ def swap_distance(order):
     return count
 
 
+class Orderer(Annealer):
+
+    steps = 25000
+
+    def __init__(self, initial_state, pgraph, classifier):
+        super(Orderer, self).__init__(initial_state)
+        self.classifier = classifier
+        self.pgraph = pgraph
+
+    def move(self):
+        a, b = np.random.random_integers(0, len(self.state) - 1, size=2)
+        self.state[a], self.state[b] = self.state[b], self.state[a]
+
+    def energy(self):
+        pgraph = build_paragraph_from_existing(self.pgraph, self.state)
+        return self.classifier.predict([get_features(pgraph)])[0]
+
+    def update(self, *args, **kwargs):
+        pass
+
+
 class SearchState(object):
 
     def __init__(self, pgraph, s_graph_order, classifier):
@@ -126,13 +148,13 @@ if __name__ == '__main__':
     n = len(examples)
     weights = n - np.bincount(labels)
     features = np.array([get_features(e) for e in examples])
-    #reg = lm.Ridge(alpha=0.1)
-    reg = lm.LogisticRegression(class_weight='auto')
+    reg = lm.Ridge(alpha=0.1)
+    #reg = lm.LogisticRegression()
     print('learning')
-    #reg.fit(features, labels, sample_weight=[weights[i] for i in labels])
-    reg.fit(features, labels)
+    reg.fit(features, labels, sample_weight=[weights[i] for i in labels])
+    #reg.fit(features, labels)
     print('done')
-    test = generate_paragraphs('amr_test.txt', limit=250, k=5)
+    test = generate_paragraphs('amr_test.txt', limit=50, k=5)
     good_tests = []
     for t in test:
         try:
@@ -143,26 +165,16 @@ if __name__ == '__main__':
             continue
     goodness = []
     for t in good_tests:
-        try:
-            first_order = np.arange(len(t.sentence_graphs()))
-            np.random.shuffle(first_order)
-            start = SearchState(t, first_order, reg)
-        except ValueError:
-            continue
-        best, val = greedy_search(start)
+        first_order = np.arange(len(t.sentence_graphs()))
+        np.random.shuffle(first_order)
+        print(first_order)
+        orderer = Orderer(first_order, t, reg)
+        best, val = orderer.anneal()
         print((best, val))
-        goodness.append(swap_distance(best.s_graph_order))
+        goodness.append(swap_distance(best))
     print(summary(goodness), len(goodness))
     test_examples, test_labels = add_negative_examples(good_tests, 20)
     test_features = [get_features(e) for e in test_examples]
     predictions = reg.predict(test_features)
     print(reg.score(test_features, test_labels))
-    """
-    scrambled_goodness = []
-    for t in test_examples:
-        start = SearchState(t, np.arange(len(t.sentence_graphs())), reg)
-        best, val = greedy_search(start)
-        print((best, val))
-        scrambled_goodness.append(swap_distance(best.s_graph_order))
-    print(summary(scrambled_goodness), len(scrambled_goodness))
-    """
+    print(reg)
