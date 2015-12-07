@@ -7,39 +7,96 @@ from amr_paragraph import SlidingWindowGenerator
 from partition import Partition
 from sklearn.linear_model import LogisticRegression
 
+class GraphPartitioning(object):
+    def __init__(self, p_graph, root_partitioning, subgraph_dict, complex_subgraph_dict):
+        self.p_graph = p_graph
+        self.root_partitioning = root_partitioning
+        self.subgraph_dict = subgraph_dict
+        self.complex_subgraph_dict = complex_subgraph_dict
+
+    def get_subgraph(self, root_set):
+        if root_set in self.complex_subgraph_dict:
+            return self.complex_subgraph_dict[root_set]
+
+        edge_set = union_all([self.subgraph_dict[root].edges for root in root_set])
+        subgraph = self.p_graph.get_subgraph(edge_set)
+        self.complex_subgraph_dict[root_set] = subgraph
+
+        return self.complex_subgraph_dict[root_set]
+
+    def copy(self, new_root_partitioning=None):
+        if new_root_partitioning is None:
+            new_root_partitioning = copy.copy(self.root_partitioning)
+
+        return GraphPartitioning(self.p_graph, new_root_partitioning, self.subgraph_dict, self.complex_subgraph_dict)
+
+    def __eq__(self, other):
+        return isinstance(other, GraphPartitioning) and other.root_partitioning == self.root_partitioning
+
+class GraphPartitioningSet(object):
+    def __init__(self, p_graph):
+        self.p_graph = p_graph
+        self.roots = p_graph.get_roots()
+        self.subgraph_dict = {root: self.p_graph.get_subgraph_from_root(root) for root in self.roots}
+        self.complex_subgraph_dict = {}
+
+        self.all_partitions = Partition(self.roots)
+        self.m = self.all_partitions.__len__()
+
+        self.graph_partitionings = {}
+
+    def get_graph_partition(self, k):
+        if k in self.graph_partitionings:
+            return self.graph_partitionings[k]
+        else:
+            root_partitioning = set([frozenset(roots) for roots in self.all_partitions[k]])
+            graph_partitioning = GraphPartitioning(self.p_graph, root_partitioning, self.subgraph_dict, self.complex_subgraph_dict)
+            self.graph_partitionings[k] = graph_partitioning
+            return self.graph_partitionings[k]
+
+    def sample_graph_partitionings(self):
+        i = random.randint(0, self.m-1)
+        return self.get_graph_partition(i)
+
 def union_all(list_of_sets):
     s = set()
     for next_s in list_of_sets:
         s.update(set(next_s))
     return s
 
-def generate_paragraphs(filename, k=3, limit=None):
+def generate_paragraphs(filename, k=5, limit=None):
     entries = FileParser().parse(filename, limit)
     swg = SlidingWindowGenerator(entries)
     paragraphs = swg.generate(k=k)
     return paragraphs
 
 def get_positive_instance(paragraph):
-    return set([frozenset(s.edges) for s in paragraph.sentence_graphs()])
+    root_partitioning = set([frozenset(s.get_roots()) for s in paragraph.sentence_graphs()])
+    subgraph_dict = {}
+    complex_subgraph_dict = {}
+    for s in paragraph.sentence_graphs():
+        edge_set = set()
+        roots = s.get_roots()
+        for r in roots:
+            subgraph_dict[r] = s.get_subgraph_from_root(r)
+            edge_set.update(subgraph_dict[r].edges)
+        full_subgraph = s.get_subgraph(edge_set)
+        complex_subgraph_dict[frozenset(roots)] = full_subgraph
+
+    return GraphPartitioning(None, root_partitioning, subgraph_dict, complex_subgraph_dict)
 
 def get_initial_partition(paragraph):
-    return set([frozenset(paragraph.paragraph_graph().get_subgraph_from_root(root).edges) for root in paragraph.paragraph_graph().get_roots()])
+    roots = paragraph.paragraph_graph().get_roots()
+    root_partitioning = set([frozenset([r]) for r in roots])
+    subgraph_dict = {r: paragraph.paragraph_graph().get_subgraph_from_root(r) for r in roots}
+    return GraphPartitioning(paragraph.paragraph_graph(), root_partitioning, subgraph_dict, {})
 
-def get_negative_instances(paragraph, target_graph, k=100):
+def get_negative_instances(paragraph, target_partition, k=100):
     g = paragraph.paragraph_graph()
-    graph_pieces = [g.get_subgraph_from_root(root).edges for root in g.get_roots()]
-    p = Partition(graph_pieces)
-    m = p.__len__()
+    partitioning_set = GraphPartitioningSet(g)
 
-    partitions = []
-    # k times choose a random partition
-    for _ in range(k):
-        i = random.randint(0, m-1)
-        set_partition = set([frozenset(union_all(list_of_sets)) for list_of_sets in p[i]])
-
-        # need to ensure that the graph is actually a negative instance
-        if set_partition != target_graph:
-            partitions.append(set_partition)
+    partitions = [partitioning_set.sample_graph_partitionings() for _ in range(k)]
+    partitions = [p for p in partitions if p != target_partition]
     return partitions
 
 def generate_instances_and_labels(paragraphs):
@@ -81,16 +138,16 @@ def generate_features(p_graph, partition):
     features = []
 
     # number of partitions
-    features.append(len(partition)) 
+    features.append(len(partition.root_partitioning)) 
 
     # mean, min, max, std_dev of #of fragments per partition
-    features += summary_statistics([len(p_graph.get_subgraph(s).get_roots()) for s in partition])
+    features += summary_statistics([len(s) for s in partition.root_partitioning])
 
     # mean, min, max, std_dev of subgraph similarity for every pair of subgraphs (including a subgraph with itself)
-    features += summary_statistics([subgraph_similarity(p_graph.get_subgraph(s1), p_graph.get_subgraph(s2)) for s1, s2 in list(itertools.combinations(partition, 2)) + [(s,s) for s in partition]])
+    features += summary_statistics([subgraph_similarity(partition.get_subgraph(s1), partition.get_subgraph(s2)) for s1, s2 in list(itertools.combinations(partition.root_partitioning, 2)) + [(s,s) for s in partition.root_partitioning]])
 
     # mean, min, max, std_dev of verb overlap for every pair of subgraphs (including a subgraph with itself)
-    features += summary_statistics([len(p_graph.get_subgraph(s1).get_verbs() & p_graph.get_subgraph(s2).get_verbs()) for s1, s2 in list(itertools.combinations(partition, 2)) + [(s,s) for s in partition]])
+    features += summary_statistics([len(partition.get_subgraph(s1).get_verbs() & partition.get_subgraph(s2).get_verbs()) for s1, s2 in list(itertools.combinations(partition.root_partitioning, 2)) + [(s,s) for s in partition.root_partitioning]])
 
     return features
 
@@ -102,12 +159,14 @@ class SearchState(object):
 
     def get_neighbors(self):
         neighbors = []
-        for s1, s2 in itertools.combinations(self.partition, 2):
-            partition_copy = copy.copy(self.partition)
-            partition_copy.remove(s1)
-            partition_copy.remove(s2)
-            partition_copy.add(s1|s2)
-            neighbors.append(SearchState(self.p_graph, partition_copy, self.classifier))
+        root_partitioning = self.partition.root_partitioning
+        for s1, s2 in itertools.combinations(root_partitioning, 2):
+            root_partition_copy = copy.copy(root_partitioning)
+            root_partition_copy.remove(s1)
+            root_partition_copy.remove(s2)
+            root_partition_copy.add(s1|s2)
+            new_partitition = self.partition.copy(root_partition_copy)
+            neighbors.append(SearchState(self.p_graph, new_partitition, self.classifier))
         return neighbors
 
     def evaluate(self):
@@ -122,7 +181,7 @@ def greedy_search(state):
         for neighbor in state.get_neighbors():
             if neighbor.evaluate() > best_val:
                 best, best_val = neighbor, neighbor.evaluate()
-                print(len(best.partition), best_val)
+                print(len(best.partition.root_partitioning), best_val)
                 found_better = True
 
         if not found_better:
@@ -131,10 +190,11 @@ def greedy_search(state):
             state = best
 
 train = generate_paragraphs('amr.txt', limit=100)
-test = generate_paragraphs('amr_test.txt', limit=10)
+test = generate_paragraphs('amr_test.txt', limit=100)
 instances, labels = generate_instances_and_labels(train)
 reg = LogisticRegression(class_weight='auto')
 reg.fit(instances, labels)
+print(reg.coef_)
 
 for t in test:
     try:
