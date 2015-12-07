@@ -122,7 +122,7 @@ def greedy_search(state):
         for neighbor in state.get_neighbors():
             if neighbor.evaluate() > best_val:
                 best, best_val = neighbor, neighbor.evaluate()
-                print(len(best.partition), best_val)
+                #print(len(best.partition), best_val)
                 found_better = True
 
         if not found_better:
