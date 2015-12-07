@@ -1,11 +1,12 @@
-import itertools, math, random, time, copy
+import itertools, math, random, time, copy, os, pickle
 
 import numpy as np
 
 from file_parser import FileParser
-from amr_paragraph import SlidingWindowGenerator
+from amr_paragraph import SlidingWindowGenerator, AMRParagraph
 from partition import Partition
 from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import roc_auc_score
 
 class GraphPartitioning(object):
     def __init__(self, p_graph, root_partitioning, subgraph_dict, complex_subgraph_dict):
@@ -189,12 +190,26 @@ def greedy_search(state):
         else:
             state = best
 
-train = generate_paragraphs('amr.txt', limit=100)
-test = generate_paragraphs('amr_test.txt', limit=100)
-instances, labels = generate_instances_and_labels(train)
+def generate_train_test(limit=100, use_cache=True):
+    pickle_filename = 'test_train_limit_%d.pickle' % limit
+    if use_cache and os.path.exists(pickle_filename):
+        return pickle.load(open(pickle_filename, 'rb'))
+    else:
+        train = generate_paragraphs('amr.txt', limit=limit)
+        test = generate_paragraphs('amr_test.txt', limit=limit)
+        train_instances, train_labels = generate_instances_and_labels(train)
+        test_instances, test_labels = generate_instances_and_labels(test)
+        data = (train_instances, train_labels, test_instances, test_labels, test)
+        pickle.dump(data, open(pickle_filename, 'wb'))
+        return data
+
+train_instances, train_labels, test_instances, test_labels, test = generate_train_test(use_cache=True)
 reg = LogisticRegression(class_weight='auto')
-reg.fit(instances, labels)
+reg.fit(train_instances, train_labels)
 print(reg.coef_)
+
+neg_prog, pos_prob = zip(*reg.predict_proba(test_instances))
+print(roc_auc_score(test_labels, pos_prob, 'weighted'))
 
 for t in test:
     try:
