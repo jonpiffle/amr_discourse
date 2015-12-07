@@ -46,12 +46,13 @@ class AMRParagraph(object):
     def _generate_amr_graph(self):
         #print(self.amr_sentences[0].entry_id)
         start_graph = AMRGraph()
-        self.s_graphs = []
+        s_graphs = []
         for sentence in self.amr_sentences:
             #print(sentence.entry_id)
             sentence_graph = start_graph.merge(sentence.amr_graph)
-            self.s_graphs.append(sentence_graph)
+            s_graphs.append(sentence_graph)
         self.amr_graph = start_graph
+        self.s_graphs = s_graphs
 
     def sentence_graphs(self):
         if self.s_graphs is None:
