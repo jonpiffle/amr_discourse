@@ -89,16 +89,21 @@ def swap_distance(order):
 
 
 if __name__ == '__main__':
+    from scorer import OrderScorer
+    from optimizer import OrderAnnealer as Orderer
+
+
     train = generate_paragraphs('amr.txt', limit=500, k=5)
 
     examples, labels = add_negative_examples(train, 20)
     n = len(examples)
     weights = n - np.bincount(labels)
     features = np.array([get_features(e, e.sentence_graphs()) for e in examples])
-    reg = lm.Ridge(alpha=0.1)
+
+    scorer = OrderScorer()
     #reg = lm.LogisticRegression()
     print('learning')
-    reg.fit(features, labels, sample_weight=[weights[i] for i in labels])
+    scorer.train(features, labels, sample_weight=[weights[i] for i in labels])
     #reg.fit(features, labels)
     print('done')
     test = generate_paragraphs('amr_test.txt', limit=50, k=5)
@@ -115,13 +120,15 @@ if __name__ == '__main__':
         first_order = np.arange(len(t.sentence_graphs()))
         np.random.shuffle(first_order)
         print(first_order)
-        orderer = Orderer(first_order, t, t.sentence_graphs(), reg)
+        orderer = Orderer(first_order, t, t.sentence_graphs(), scorer)
         best, val = orderer.anneal()
         print((best, val))
         goodness.append(swap_distance(best))
     print(summary(goodness), len(goodness))
     test_examples, test_labels = add_negative_examples(good_tests, 20)
     test_features = [get_features(e, e.sentence_graphs()) for e in test_examples]
+    """
     predictions = reg.predict(test_features)
     print(reg.score(test_features, test_labels))
     print(reg)
+    """
