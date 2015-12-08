@@ -14,6 +14,7 @@ class GraphPartitioning(object):
         self.root_partitioning = root_partitioning
         self.subgraph_dict = subgraph_dict
         self.complex_subgraph_dict = complex_subgraph_dict
+        self.ordering = None
 
     def get_subgraph(self, root_set):
         if root_set in self.complex_subgraph_dict:
