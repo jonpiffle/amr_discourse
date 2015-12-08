@@ -8,10 +8,13 @@ import sklearn.linear_model as lm
 from simanneal import Annealer
 
 from amr_paragraph import AMRParagraph
-from subgraph_learner import generate_paragraphs
 
 
 def summary(lst):
+    # set features to 0 if empty lst (like cases where list is too small to get 2-step similarity)
+    if len(lst) == 0:
+        return [0, 0, 0, 0]
+
     return [np.mean(lst), np.std(lst), min(lst), max(lst)]
 
 
@@ -25,8 +28,8 @@ def jaccard(s1, s2):
     return len(s1 & s2) / len(s1 | s2)
 
 
-def get_features(paragraph, s_graphs):
-    amr = paragraph.paragraph_graph()
+def get_features(p_graph, s_graphs):
+    amr = p_graph
     node_sets = [set(g.nodes.values()) for g in s_graphs]
     node_jacc = [jaccard(v1, v2) for v1, v2 in zip(node_sets[:-1], node_sets[1:])]
 
@@ -50,11 +53,6 @@ def get_features(paragraph, s_graphs):
 def add_negative_examples(paragraphs, k):
     examples, labels = [], []
     for p in paragraphs:
-        try:
-            p.sentence_graphs()
-        except ValueError as e:
-            print(e)
-            continue
         examples.append(p)
         labels.append(0)
         ordering = np.arange(len(p.amr_sentences))
@@ -66,6 +64,14 @@ def add_negative_examples(paragraphs, k):
             examples.append(new_paragraph)
             labels.append(score)
     return examples, labels
+
+def generate_instances_and_labels(paragraphs, k=20):
+    examples, labels = add_negative_examples(paragraphs, 20)
+    n = len(examples)
+    weights = n - np.bincount(labels)
+    features = np.array([get_features(e.paragraph_graph(), e.sentence_graphs()) for e in examples])
+    sample_weights = [weights[i] for i in labels]
+    return features, labels, sample_weights 
 
 
 def build_paragraph_from_existing(old_pgraph, new_order):
@@ -98,7 +104,7 @@ if __name__ == '__main__':
     examples, labels = add_negative_examples(train, 20)
     n = len(examples)
     weights = n - np.bincount(labels)
-    features = np.array([get_features(e, e.sentence_graphs()) for e in examples])
+    features = np.array([get_features(e.paragraph_graph(), e.sentence_graphs()) for e in examples])
 
     scorer = OrderScorer()
     #reg = lm.LogisticRegression()
@@ -126,7 +132,7 @@ if __name__ == '__main__':
         goodness.append(swap_distance(best))
     print(summary(goodness), len(goodness))
     test_examples, test_labels = add_negative_examples(good_tests, 20)
-    test_features = [get_features(e, e.sentence_graphs()) for e in test_examples]
+    test_features = [get_features(e.paragraph_graph(), e.sentence_graphs()) for e in test_examples]
     """
     predictions = reg.predict(test_features)
     print(reg.score(test_features, test_labels))
