@@ -63,7 +63,7 @@ class OrderOptimizer(Optimizer):
         elif strategy == 'baseline':
             opt_order = np.arange(len(sgraphs))
             np.random.shuffle(opt_order)
-            return opt_order)
+            return opt_order
         else:
             raise ValueError('incorrect strategy type: %s. Choose from: (greedy, anneal, baseline)' % strategy)
 
