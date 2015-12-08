@@ -40,23 +40,30 @@ class SubgraphSelectionScorer(Scorer):
 
 
 class OrderScorer(Scorer):
+
     def __init__(self): 
-        pass
+        self.classifier = lm.Ridge(alpha=0.1)
 
     def train(self, train_instances, train_labels, use_cache=True):
         """
         Trains a scorer to score the quality of an ordering of sentences
         Loads from cache if available
         """
-        pass
+        cache = 'subgraph_order_scorer_reg.pickle'
+        if use_cache and os.path.exists(cache):
+            self.classifier = pickle.load(open(cache, 'rb'))
+        else:
+            self.classifier.fit(train_instances, train_labels)
+            pickle.dump(self.classifier, open(cache, 'wb'))
 
     def test(self, test_instances, test_labels):
         """ Uses test set to evaluate the performance of the scorer and print it out """
-        pass
+        scores = self.classifier.predict(test_instances)
+        # TODO: print report
 
     def evaluate(self, test_instance):
         """ Applies the scoring function to a given test instance """
-        pass
+        return self.classifier.predict([test_instance])[0]
 
 class PipelineScorer(Scorer):
     def __init__(self):
