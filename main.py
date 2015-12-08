@@ -6,15 +6,59 @@ import argparse
 import numpy as np
 import numpy.random
 
-from amr_paragraph import SlidingWindowGenerator
-from order_learner import OrderLearner
+from amr_paragraph import SlidingWindowGenerator, generate_paragraphs
 from file_parser import FileParser
+from scorer import SubgraphSelectionScorer, OrderScorer, PipelineScorer
+from optimizer import SubgraphOptimizer, OrderOptimizer
+from subgraph_learner import generate_instances_and_labels as gen_subgraph_data
+from order_learner import generate_instances_and_labels as gen_order_data
 
+def train():
+    print('Loading amr data')
+    paragraphs = generate_paragraphs('amr.txt', k=5)
+    print('%d total cleaned paragraphs' % len(paragraphs))
+
+    print('Training Subgraph Selection Scorer')
+    train_instances, train_labels = gen_subgraph_data(paragraphs)
+    subgraph_scorer = SubgraphSelectionScorer()
+    subgraph_scorer.train(train_instances, train_labels, update_cache=True)
+
+    print('Training Order Scorer')
+    train_instances, train_labels, train_weights = gen_order_data(paragraphs)
+    order_scorer = OrderScorer()
+    order_scorer.train(train_instances, train_labels, train_weights)
+
+    print('Training Pipeline Scorer')
+    pipeline_scorer = PipelineScorer()
+    subgraph_optimizer = SubgraphOptimizer(subgraph_scorer)
+    order_optimizer = OrderOptimizer(order_scorer)
+    pipeline_scorer.train(subgraph_optimizer, order_optimizer)
+
+def test():
+    print('Loading amr data')
+    paragraphs = generate_paragraphs('amr_test.txt', k=5, limit=100)
+    print('%d total cleaned paragraphs' % len(paragraphs))
+
+    print('Testing Subgraph Selection Scorer')
+    test_instances, test_labels = gen_subgraph_data(paragraphs)
+    subgraph_scorer = SubgraphSelectionScorer()
+    subgraph_scorer.load()
+    subgraph_scorer.test(test_instances, test_labels)
+
+    print('Testing Order Scorer')
+    test_instances, test_labels, test_weights = gen_order_data(paragraphs)
+    order_scorer = OrderScorer()
+    order_scorer.load()
+    order_scorer.test(test_instances, test_labels)    
+
+    print('Testing Pipeline Scorer')
+    pipeline_scorer = PipelineScorer()
+    pipeline_scorer.load()
+    pipeline_scorer.test(paragraphs, subgraph_strategy='baseline', order_strategy='baseline')
+    pipeline_scorer.test(paragraphs, subgraph_strategy='greedy', order_strategy='greedy')
 
 LEARNERS = {
-    'ordering': OrderLearner,
 }
-
 
 def probability(string):
     value = float(string)
@@ -26,7 +70,6 @@ def probability(string):
 
 def get_learner(**kwargs):
     return LEARNERS[kwargs['learner']]
-
 
 def main(**kwargs):
     train_data = FileParser().parse(kwargs.pop('train_file'))
@@ -44,6 +87,9 @@ def main(**kwargs):
 
 
 if __name__ == '__main__':
+    train()
+
+    '''
     parser = argparse.ArgumentParser(
         prog='main.py',
         description='learn some discourse',
@@ -72,3 +118,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     main(**vars(args))
+    '''
