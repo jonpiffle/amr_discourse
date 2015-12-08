@@ -26,9 +26,8 @@ def jaccard(s1, s2):
     return len(s1 & s2) / len(s1 | s2)
 
 
-def get_features(paragraph):
+def get_features(paragraph, s_graphs):
     amr = paragraph.paragraph_graph()
-    s_graphs = paragraph.sentence_graphs()
     node_sets = [set(g.nodes.values()) for g in s_graphs]
     node_jacc = [jaccard(v1, v2) for v1, v2 in zip(node_sets[:-1], node_sets[1:])]
 
@@ -45,7 +44,7 @@ def get_features(paragraph):
     feature_vec += summary(jacc2)
     feature_vec += summary(node_jacc)
     feature_vec += summary(combined_jacc)
-    feature_vec += [sum([len(e) * (len(s_graphs) - 1) for e in edge_sets])]
+    #feature_vec += [sum([len(e) * (len(s_graphs) - 1) for e in edge_sets])]
     return feature_vec
 
 
@@ -94,18 +93,19 @@ class Orderer(Annealer):
 
     steps = 25000
 
-    def __init__(self, initial_state, pgraph, classifier):
+    def __init__(self, initial_state, pgraph, sgraphs, classifier):
         super(Orderer, self).__init__(initial_state)
         self.classifier = classifier
         self.pgraph = pgraph
+        self.sgraphs = sgraphs
 
     def move(self):
         a, b = np.random.random_integers(0, len(self.state) - 1, size=2)
         self.state[a], self.state[b] = self.state[b], self.state[a]
 
     def energy(self):
-        pgraph = build_paragraph_from_existing(self.pgraph, self.state)
-        return self.classifier.predict([get_features(pgraph)])[0]
+        sgraphs = [self.sgraphs[i] for i in self.state]
+        return self.classifier.predict([get_features(self.pgraph, sgraphs)])[0]
 
     def update(self, *args, **kwargs):
         pass
@@ -113,23 +113,30 @@ class Orderer(Annealer):
 
 class SearchState(object):
 
-    def __init__(self, pgraph, s_graph_order, classifier):
+    def __init__(self, pgraph, order, sgraphs, classifier):
         self.pgraph = pgraph
-        self.s_graph_order = s_graph_order
+        self.order = order
+        self.sgraphs = sgraphs
         self.classifier = classifier
 
     def get_neighbors(self):
         states = []
-        for order in pairwise_swaps(self.s_graph_order):
-            new_pgraph = build_paragraph_from_existing(self.pgraph, order)
-            states.append(SearchState(new_pgraph, order, self.classifier))
+        for order in pairwise_swaps(self.order):
+            new_state = SearchState(
+                self.pgraph,
+                order,
+                self.sgraphs,
+                self.classifier,
+            )
+            states.append(new_state)
         return states
 
     def evaluate(self):
-        return self.classifier.predict([get_features(self.pgraph)])[0]
+        sgraphs = [self.sgraphs[i] for i in self.order]
+        return self.classifier.predict([get_features(self.pgraph, sgraphs)])[0]
 
     def __repr__(self):
-        return str(self.s_graph_order)
+        return str(self.order)
 
 
 def pairwise_swaps(order):
@@ -147,7 +154,7 @@ if __name__ == '__main__':
     examples, labels = add_negative_examples(train, 20)
     n = len(examples)
     weights = n - np.bincount(labels)
-    features = np.array([get_features(e) for e in examples])
+    features = np.array([get_features(e, e.sentence_graphs()) for e in examples])
     reg = lm.Ridge(alpha=0.1)
     #reg = lm.LogisticRegression()
     print('learning')
@@ -168,13 +175,13 @@ if __name__ == '__main__':
         first_order = np.arange(len(t.sentence_graphs()))
         np.random.shuffle(first_order)
         print(first_order)
-        orderer = Orderer(first_order, t, reg)
+        orderer = Orderer(first_order, t, t.sentence_graphs(), reg)
         best, val = orderer.anneal()
         print((best, val))
         goodness.append(swap_distance(best))
     print(summary(goodness), len(goodness))
     test_examples, test_labels = add_negative_examples(good_tests, 20)
-    test_features = [get_features(e) for e in test_examples]
+    test_features = [get_features(e, e.sentence_graphs()) for e in test_examples]
     predictions = reg.predict(test_features)
     print(reg.score(test_features, test_labels))
     print(reg)
