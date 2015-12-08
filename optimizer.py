@@ -156,6 +156,7 @@ def greedy_search(state):
             return best, best_val
         else:
             state = best
+    return best, best_val
 
 
 class OrderAnnealer(Annealer):
