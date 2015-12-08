@@ -373,7 +373,7 @@ class AMRGraph(object):
         return self.get_subgraph(edges)
 
     def reverse_arg_ofs(self):
-        for e in self.edges:
+        for e in set(self.edges):
             if re.match('ARG\d-of', e.label) is not None:
                 self.delete_edge(e)
                 self.add_edge(e.in_node, e.out_node, e.label.replace('-of', ''))
