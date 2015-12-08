@@ -5,8 +5,8 @@ import numpy as np
 from file_parser import FileParser
 from amr_paragraph import SlidingWindowGenerator, AMRParagraph
 from partition import Partition
-from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import roc_auc_score, classification_report
+from scorer import SubgraphSelectionScorer
+from optimizer import SubgraphOptimizer
 
 class GraphPartitioning(object):
     def __init__(self, p_graph, root_partitioning, subgraph_dict, complex_subgraph_dict):
@@ -156,44 +156,6 @@ def generate_features(p_graph, partition):
 
     return features
 
-class SearchState(object):
-    def __init__(self, p_graph, partition, scorer):
-        self.p_graph = p_graph
-        self.partition = partition
-        self.scorer = scorer
-
-    def get_neighbors(self):
-        neighbors = []
-        root_partitioning = self.partition.root_partitioning
-        for s1, s2 in itertools.combinations(root_partitioning, 2):
-            root_partition_copy = copy.copy(root_partitioning)
-            root_partition_copy.remove(s1)
-            root_partition_copy.remove(s2)
-            root_partition_copy.add(s1|s2)
-            new_partitition = self.partition.copy(root_partition_copy)
-            neighbors.append(SearchState(self.p_graph, new_partitition, self.scorer))
-        return neighbors
-
-    def evaluate(self):
-        return self.scorer.evaluate(generate_features(self.p_graph, self.partition))
-
-def greedy_search(state):
-    best, best_val = state, state.evaluate()
-
-    while len(state.get_neighbors()) > 0:
-        found_better = False
-
-        for neighbor in state.get_neighbors():
-            if neighbor.evaluate() > best_val:
-                best, best_val = neighbor, neighbor.evaluate()
-                print(len(best.partition.root_partitioning), best_val)
-                found_better = True
-
-        if not found_better:
-            return best, best_val
-        else:
-            state = best
-
 def generate_train_test(limit=100, use_cache=True):
     pickle_filename = 'test_train_limit_%d.pickle' % limit
     if use_cache and os.path.exists(pickle_filename):
@@ -207,132 +169,30 @@ def generate_train_test(limit=100, use_cache=True):
         pickle.dump(data, open(pickle_filename, 'wb'))
         return data
 
-def get_root_swaps(root_partitions, goal_root_partitions):
-    def get_goal_partition_index(root):
-        return next(i for i, root_partition in enumerate(goal_root_partitions) if root in root_partition)
 
-    count = 0
-    for i, root_partition_i in enumerate(root_partitions):
-        for root_partition_j in root_partitions[i + 1:]:
-            for root_i in root_partition_i:
-                for root_j in root_partition_j:
-                    if get_goal_partition_index(root_i) > get_goal_partition_index(root_j):
-                        count += 1
-    return count
+if __name__ == '__main__':
+    train_instances, train_labels, test_instances, test_labels, test = generate_train_test(use_cache=True)
+    scorer = SubgraphSelectionScorer()
+    scorer.train(train_instances, train_labels)
+    scorer.test(test_instances, test_labels)
 
-class Scorer(object):
-    def __init__(self):
-        pass
+    for t in test:
+        try:
+            optimizer = SubgraphOptimizer(scorer)
+            final_state = optimizer.optimize(t)
+        except ValueError:
+            continue
 
-    def train(self, train_instances, train_labels, use_cache=True):
-        pass
+        print(final_state)
 
-    def test(self, test_instances, test_labels):
-        pass
+        '''
+        final_partition = final_state.partition
+        dummy_ordering = list(final_partition.root_partitioning)
+        random.shuffle(dummy_ordering)
+        actual_ordering = [frozenset(s.get_roots()) for s in t.sentence_graphs()]
+        print(dummy_ordering)
+        print(actual_ordering)
+        print(get_root_swaps(dummy_ordering, actual_ordering))
+        '''
 
-    def evaluate(self, test_instance):
-        pass
-
-
-class SubgraphSelectionScorer(Scorer):
-    def __init__(self):
-        self.classifier = LogisticRegression(class_weight='auto')
-
-    def train(self, train_instances, train_labels, use_cache=True):
-        train_filename = 'subgraph_selection_scorer_reg.pickle'
-        if use_cache and os.path.exists(train_filename):
-            self.classifier = pickle.load(open(train_filename, 'rb'))
-        else:
-            self.classifier.fit(train_instances, train_labels)
-            pickle.dump(classifier, open(train_filename, 'wb'))
-
-    def test(self, test_instances, test_labels):
-        neg_prog, pos_prob = zip(*self.classifier.predict_proba(test_instances))
-        print(classification_report(test_labels, pos_prob))
-
-    def evaluate(self, test_instance):
-        return self.classifier.predict_proba([test_instance])[0][1]
-
-
-class Optimizer(object):
-    def __init__(self):
-        pass
-
-    def optimize(self, initial_state, strategy='greedy'):
-        pass 
-
-
-class SubgraphOptimizer(Optimizer):
-    def __init__(self, scorer):
-        self.scorer = scorer
-
-    def optimize(self, test_paragraph, strategy='greedy'):
-        if strategy == 'greedy':
-            initial_state = SearchState(test_paragraph.paragraph_graph(), get_initial_partition(test_paragraph), self.scorer)
-            final_state, final_reward = greedy_search(initial_state)
-        elif strategy == 'baseline':
-            partitioning_set = GraphPartitioningSet(test_paragraph.paragraph_graph())
-            final_state = partitioning_set.sample_graph_partitionings()
-        else:
-            raise ValueError('incorrect strategy type: %s. Choose from: (greedy, baseline)' % strategy)
-
-        return final_state
-
-class OrderScorer(Scorer):
-    def __init__(self): 
-        pass
-
-    def train(self, train_instances, train_labels, use_cache=True):
-        """
-        Trains a scorer to score the quality of an ordering of sentences
-        Loads from cache if available
-        """
-        pass
-
-    def test(self, test_instances, test_labels):
-        """ Uses test set to evaluate the performance of the scorer and print it out """
-        pass
-
-    def evaluate(self, test_instance):
-        """ Applies the scoring function to a given test instance """
-        pass
-
-
-class OrderOptimizer(Optimizer):
-    def __init__(self, scorer):
-        self.scorer = scorer
-
-    def optimize(self, graph_partitioning, strategy='greedy'):
-        """ Takes a graph_partitioning and an optimization strategy and returns the optimal sentence ordering found """
-        if strategy == 'greedy':
-            pass
-        elif strategy == 'anneal':
-            pass
-        elif strategy == 'baseline':
-            pass
-        else:
-            raise ValueError('incorrect strategy type: %s. Choose from: (greedy, anneal, baseline)' % strategy)
-
-train_instances, train_labels, test_instances, test_labels, test = generate_train_test(use_cache=True)
-reg = LogisticRegression(class_weight='auto')
-reg.fit(train_instances, train_labels)
-print(reg.coef_)
-
-neg_prog, pos_prob = zip(*reg.predict_proba(test_instances))
-print(roc_auc_score(test_labels, pos_prob, 'weighted'))
-
-for t in test:
-    try:
-        initial_state = SearchState(t.paragraph_graph(), get_initial_partition(t), reg)
-    except ValueError:
-        continue
-    final_state, final_reward = greedy_search(initial_state)
-    final_partition = final_state.partition
-    dummy_ordering = list(final_partition.root_partitioning)
-    random.shuffle(dummy_ordering)
-    actual_ordering = [frozenset(s.get_roots()) for s in t.sentence_graphs()]
-    print(dummy_ordering)
-    print(actual_ordering)
-    print(get_root_swaps(dummy_ordering, actual_ordering))
-
-    exit()
+        exit()
