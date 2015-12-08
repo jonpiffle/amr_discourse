@@ -106,7 +106,7 @@ def get_negative_instances(paragraph, target_partition, k=100):
     partitions = [p for p in partitions if p != target_partition]
     return partitions
 
-def generate_instances_and_labels(paragraphs):
+def generate_instances_and_labels(paragraphs, k=100):
     instances, labels = [], []
     for i, paragraph in enumerate(paragraphs):
         print('generating subgraph features for instance %d' % i)
@@ -114,7 +114,7 @@ def generate_instances_and_labels(paragraphs):
         instances.append(generate_features(paragraph.paragraph_graph(), positive_instance))
         labels.append(1)
 
-        negative_instances = get_negative_instances(paragraph, get_positive_instance(paragraph))
+        negative_instances = get_negative_instances(paragraph, get_positive_instance(paragraph), k=k)
         instances += [generate_features(paragraph.paragraph_graph(), n) for n in negative_instances]
         labels += [0] * len(negative_instances)
     return instances, labels
