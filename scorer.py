@@ -1,6 +1,6 @@
 import os, pickle, sys
 
-from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import roc_auc_score, classification_report
 
 class Scorer(object):
@@ -41,10 +41,11 @@ class SubgraphSelectionScorer(Scorer):
 
 class OrderScorer(Scorer):
 
-    def __init__(self): 
-        self.classifier = lm.Ridge(alpha=0.1)
+    def __init__(self):
+        self.classifier = Ridge(alpha=0.1)
 
-    def train(self, train_instances, train_labels, use_cache=True):
+    def train(self, train_instances, train_labels, use_cache=True,
+              sample_weight=None):
         """
         Trains a scorer to score the quality of an ordering of sentences
         Loads from cache if available
@@ -53,7 +54,8 @@ class OrderScorer(Scorer):
         if use_cache and os.path.exists(cache):
             self.classifier = pickle.load(open(cache, 'rb'))
         else:
-            self.classifier.fit(train_instances, train_labels)
+            self.classifier.fit(train_instances, train_labels,
+                                sample_weight=sample_weight)
             pickle.dump(self.classifier, open(cache, 'wb'))
 
     def test(self, test_instances, test_labels):

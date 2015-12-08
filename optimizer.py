@@ -161,7 +161,7 @@ class OrderAnnealer(Annealer):
     steps = 25000
 
     def __init__(self, initial_state, pgraph, sgraphs, scorer):
-        super(Orderer, self).__init__(initial_state)
+        super(OrderAnnealer, self).__init__(initial_state)
         self.scorer = scorer
         self.pgraph = pgraph
         self.sgraphs = sgraphs

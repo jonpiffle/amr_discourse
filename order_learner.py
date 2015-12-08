@@ -9,7 +9,6 @@ from simanneal import Annealer
 
 from amr_paragraph import AMRParagraph
 from subgraph_learner import generate_paragraphs
-from subgraph_learner import greedy_search
 
 
 def summary(lst):
