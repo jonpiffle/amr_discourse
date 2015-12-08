@@ -36,11 +36,12 @@ def train():
 
 def test():
     print('Loading amr data')
-    paragraphs = generate_paragraphs('amr_test.txt', k=5, limit=100)
+    paragraphs = generate_paragraphs('amr_test.txt', k=5)
     print('%d total cleaned paragraphs' % len(paragraphs))
+    paragraphs = paragraphs[:10]
 
     print('Testing Subgraph Selection Scorer')
-    test_instances, test_labels = gen_subgraph_data(paragraphs)
+    test_instances, test_labels = gen_subgraph_data(paragraphs, k=1)
     subgraph_scorer = SubgraphSelectionScorer()
     subgraph_scorer.load()
     subgraph_scorer.test(test_instances, test_labels)
@@ -55,7 +56,7 @@ def test():
     pipeline_scorer = PipelineScorer()
     pipeline_scorer.load()
     pipeline_scorer.test(paragraphs, subgraph_strategy='baseline', order_strategy='baseline')
-    pipeline_scorer.test(paragraphs, subgraph_strategy='greedy', order_strategy='greedy')
+    pipeline_scorer.test(paragraphs, subgraph_strategy='greedy', order_strategy='anneal', processes=2)
 
 LEARNERS = {
 }
@@ -87,7 +88,7 @@ def main(**kwargs):
 
 
 if __name__ == '__main__':
-    train()
+    test()
 
     '''
     parser = argparse.ArgumentParser(
