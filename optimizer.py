@@ -24,6 +24,7 @@ class SubgraphOptimizer(Optimizer):
         if strategy == 'greedy':
             initial_state = GraphPartitionState(test_paragraph.paragraph_graph(), get_initial_partition(test_paragraph), self.scorer)
             final_state, final_reward = greedy_search(initial_state)
+            final_state = final_state.partition
         elif strategy == 'baseline':
             partitioning_set = GraphPartitioningSet(test_paragraph.paragraph_graph())
             final_state = partitioning_set.sample_graph_partitionings()
@@ -50,22 +51,23 @@ class OrderOptimizer(Optimizer):
                 self.scorer,
             )
             opt_order, opt = greedy_search(initial_state)
-            return opt_order
+            opt_order = opt_order.order
         elif strategy == 'anneal':
             annealer = OrderAnnealer(
                 np.arange(len(sgraphs)),
-                pgraphs,
+                pgraph,
                 sgraphs,
                 self.scorer,
             )
             opt_order, opt = annealer.anneal()
-            return opt_order
         elif strategy == 'baseline':
             opt_order = np.arange(len(sgraphs))
             np.random.shuffle(opt_order)
-            return opt_order
         else:
             raise ValueError('incorrect strategy type: %s. Choose from: (greedy, anneal, baseline)' % strategy)
+
+        graph_partitioning.order = opt_order
+        return graph_partitioning
 
 
 class SearchState(object):
