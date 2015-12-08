@@ -1,4 +1,4 @@
-import itertools, copy
+import itertools, copy, os, sys, pickle
 
 from file_parser import FileParser
 from amr_graph import AMRGraph
@@ -63,6 +63,26 @@ class AMRParagraph(object):
         if self.amr_graph is None:
             self._generate_amr_graph()
         return self.amr_graph
+
+def generate_paragraphs(filename, k=5, limit=None, update_cache=False):
+    pickle_filename = '%s_cleaned_paragraphs.pickle' % filename
+    if not update_cache and os.path.exists(pickle_filename):
+        return pickle.load(open(pickle_filename, 'rb'))
+
+    entries = FileParser().parse(filename, limit)
+    swg = SlidingWindowGenerator(entries)
+    paragraphs = swg.generate(k=k)
+
+    cleaned_paragraphs = []
+    for i, p in enumerate(paragraphs):
+        try:
+            p.paragraph_graph()
+            cleaned_paragraphs.append(p)
+        except ValueError as e:
+            print(i, e)
+            continue
+    pickle.dump(cleaned_paragraphs, open(pickle_filename, 'wb'))
+    return cleaned_paragraphs
 
 if __name__ == '__main__':
     entries = FileParser().parse('amr.txt', limit=1000)
