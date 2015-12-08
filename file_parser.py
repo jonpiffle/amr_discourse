@@ -62,7 +62,8 @@ class FileParser(object):
 
         try:
             amr_graph.remove_and()
-        except RuntimeError:
+        except (RuntimeError, ValueError) as e:
+            print(e)
             return None
         
         return AMRSentence(entry_id, entry_date, entry_type, filename, sentence, amr_graph, amr_string)
