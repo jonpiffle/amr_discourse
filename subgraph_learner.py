@@ -182,7 +182,7 @@ def greedy_search(state):
         for neighbor in state.get_neighbors():
             if neighbor.evaluate() > best_val:
                 best, best_val = neighbor, neighbor.evaluate()
-                #print(len(best.partition), best_val)
+                print(len(best.partition.root_partitioning), best_val)
                 found_better = True
 
         if not found_better:
@@ -203,6 +203,19 @@ def generate_train_test(limit=100, use_cache=True):
         pickle.dump(data, open(pickle_filename, 'wb'))
         return data
 
+def get_root_swaps(root_partitions, goal_root_partitions):
+    def get_goal_partition_index(root):
+        return next(i for i, root_partition in enumerate(goal_root_partitions) if root in root_partition)
+
+    count = 0
+    for i, root_partition_i in enumerate(root_partitions):
+        for root_partition_j in root_partitions[i + 1:]:
+            for root_i in root_partition_i:
+                for root_j in root_partition_j:
+                    if get_goal_partition_index(root_i) > get_goal_partition_index(root_j):
+                        count += 1
+    return count
+
 train_instances, train_labels, test_instances, test_labels, test = generate_train_test(use_cache=True)
 reg = LogisticRegression(class_weight='auto')
 reg.fit(train_instances, train_labels)
@@ -216,5 +229,13 @@ for t in test:
         initial_state = SearchState(t.paragraph_graph(), get_initial_partition(t), reg)
     except ValueError:
         continue
-    print(greedy_search(initial_state))
+    final_state, final_reward = greedy_search(initial_state)
+    final_partition = final_state.partition
+    dummy_ordering = list(final_partition.root_partitioning)
+    random.shuffle(dummy_ordering)
+    actual_ordering = [frozenset(s.get_roots()) for s in t.sentence_graphs()]
+    print(dummy_ordering)
+    print(actual_ordering)
+    print(get_root_swaps(dummy_ordering, actual_ordering))
+
     exit()
