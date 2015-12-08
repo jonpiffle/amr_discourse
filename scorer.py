@@ -4,6 +4,7 @@ import numpy as np
 
 from sklearn.linear_model import LogisticRegression, Ridge
 from sklearn.metrics import roc_auc_score, classification_report
+from multiprocessing import Pool
 
 def summary(lst):
     # set features to 0 if empty lst (like cases where list is too small to get 2-step similarity)
@@ -11,6 +12,12 @@ def summary(lst):
         return [0, 0, 0, 0]
 
     return [np.mean(lst), np.std(lst), min(lst), max(lst)]
+
+def chunkify(lst,n):
+    return [lst[i::n] for i in range(n)]
+
+def flatten(lst):
+    return [val for sublist in lst for val in sublist]
 
 class Scorer(object):
     def __init__(self):
@@ -98,11 +105,15 @@ class PipelineScorer(Scorer):
         if update_cache:
             pickle.dump((self.subgraph_optimizer, self.order_optimizer), open(self.cache_filename, 'wb'))
 
-    def test(self, test_paragraphs, subgraph_strategy='greedy', order_strategy='greedy'):
+    def test(self, test_paragraphs, subgraph_strategy='greedy', order_strategy='greedy', processes=1):
         print('subgraph_strategy: %s' % subgraph_strategy)
         print('order_strategy: %s' % order_strategy)
-        print('mean, std_dev, min, max kendall tau: ', 
-              summary([self.evaluate(test_paragraph, subgraph_strategy, order_strategy) for test_paragraph in test_paragraphs]))
+        if processes > 1:
+            p = Pool(processes)
+            kendall_taus = p.starmap(self.evaluate, [(t, subgraph_strategy, order_strategy) for t in test_paragraphs])
+        else:
+            kendall_taus = [self.evaluate(test_paragraph, subgraph_strategy, order_strategy) for test_paragraph in test_paragraphs]
+        print('mean, std_dev, min, max kendall tau: ', summary(kendall_taus))
         print()
 
     def load(self):
