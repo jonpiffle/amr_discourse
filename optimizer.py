@@ -1,5 +1,9 @@
 import itertools, copy
 
+import numpy as np
+import numpy.random
+from simanneal import Annealer
+
 class Optimizer(object):
 
     def __init__(self):
@@ -36,12 +40,30 @@ class OrderOptimizer(Optimizer):
 
     def optimize(self, graph_partitioning, strategy='greedy'):
         """ Takes a graph_partitioning and an optimization strategy and returns the optimal sentence ordering found """
+        pgraph = graph_partitioning.p_graph
+        sgraphs = graph_partitioning.get_all_subgraphs()
         if strategy == 'greedy':
-            pass
+            initial_state = SubgraphOrderSearchState(
+                pgraph,
+                np.arange(len(sgraphs)),
+                sgraphs,
+                self.scorer,
+            )
+            opt_order, opt = greedy_search(initial_state)
+            return opt_order
         elif strategy == 'anneal':
-            pass
+            annealer = OrderAnnealer(
+                np.arange(len(sgraphs)),
+                pgraphs,
+                sgraphs,
+                self.scorer,
+            )
+            opt_order, opt = annealer.anneal()
+            return opt_order
         elif strategy == 'baseline':
-            pass
+            opt_order = np.arange(len(sgraphs))
+            np.random.shuffle(opt_order)
+            return opt_order)
         else:
             raise ValueError('incorrect strategy type: %s. Choose from: (greedy, anneal, baseline)' % strategy)
 
@@ -132,3 +154,27 @@ def greedy_search(state):
             return best, best_val
         else:
             state = best
+
+
+class OrderAnnealer(Annealer):
+
+    steps = 25000
+
+    def __init__(self, initial_state, pgraph, sgraphs, scorer):
+        super(Orderer, self).__init__(initial_state)
+        self.scorer = scorer
+        self.pgraph = pgraph
+        self.sgraphs = sgraphs
+
+    def move(self):
+        a, b = np.random.random_integers(0, len(self.state) - 1, size=2)
+        self.state[a], self.state[b] = self.state[b], self.state[a]
+
+    def energy(self):
+        from order_learner import get_features
+        sgraphs = [self.sgraphs[i] for i in self.state]
+        features = get_features(self.pgraph, sgraphs)
+        return self.scorer.evaluate(features)
+
+    def update(self, *args, **kwargs):
+        pass

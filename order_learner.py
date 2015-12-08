@@ -89,65 +89,6 @@ def swap_distance(order):
     return count
 
 
-class Orderer(Annealer):
-
-    steps = 25000
-
-    def __init__(self, initial_state, pgraph, sgraphs, classifier):
-        super(Orderer, self).__init__(initial_state)
-        self.classifier = classifier
-        self.pgraph = pgraph
-        self.sgraphs = sgraphs
-
-    def move(self):
-        a, b = np.random.random_integers(0, len(self.state) - 1, size=2)
-        self.state[a], self.state[b] = self.state[b], self.state[a]
-
-    def energy(self):
-        sgraphs = [self.sgraphs[i] for i in self.state]
-        return self.classifier.predict([get_features(self.pgraph, sgraphs)])[0]
-
-    def update(self, *args, **kwargs):
-        pass
-
-
-class SearchState(object):
-
-    def __init__(self, pgraph, order, sgraphs, classifier):
-        self.pgraph = pgraph
-        self.order = order
-        self.sgraphs = sgraphs
-        self.classifier = classifier
-
-    def get_neighbors(self):
-        states = []
-        for order in pairwise_swaps(self.order):
-            new_state = SearchState(
-                self.pgraph,
-                order,
-                self.sgraphs,
-                self.classifier,
-            )
-            states.append(new_state)
-        return states
-
-    def evaluate(self):
-        sgraphs = [self.sgraphs[i] for i in self.order]
-        return self.classifier.predict([get_features(self.pgraph, sgraphs)])[0]
-
-    def __repr__(self):
-        return str(self.order)
-
-
-def pairwise_swaps(order):
-    swaps = []
-    for i in range(len(order) - 1):
-        new_order = order.copy()
-        new_order[i], new_order[i + 1] = order[i + 1], order[i]
-        swaps.append(new_order)
-    return swaps
-
-
 if __name__ == '__main__':
     train = generate_paragraphs('amr.txt', limit=500, k=5)
 
