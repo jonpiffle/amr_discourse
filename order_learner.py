@@ -113,23 +113,30 @@ class Orderer(Annealer):
 
 class SearchState(object):
 
-    def __init__(self, pgraph, s_graph_order, classifier):
+    def __init__(self, pgraph, order, sgraphs, classifier):
         self.pgraph = pgraph
-        self.s_graph_order = s_graph_order
+        self.order = order
+        self.sgraphs = sgraphs
         self.classifier = classifier
 
     def get_neighbors(self):
         states = []
-        for order in pairwise_swaps(self.s_graph_order):
-            new_pgraph = build_paragraph_from_existing(self.pgraph, order)
-            states.append(SearchState(new_pgraph, order, self.classifier))
+        for order in pairwise_swaps(self.order):
+            new_state = SearchState(
+                self.pgraph,
+                order,
+                self.sgraphs,
+                self.classifier,
+            )
+            states.append(new_state)
         return states
 
     def evaluate(self):
-        return self.classifier.predict([get_features(self.pgraph)])[0]
+        sgraphs = [self.sgraphs[i] for i in self.order]
+        return self.classifier.predict([get_features(self.pgraph, sgraphs)])[0]
 
     def __repr__(self):
-        return str(self.s_graph_order)
+        return str(self.order)
 
 
 def pairwise_swaps(order):
