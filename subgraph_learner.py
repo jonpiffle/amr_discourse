@@ -25,6 +25,9 @@ class GraphPartitioning(object):
 
         return self.complex_subgraph_dict[root_set]
 
+    def get_all_subgraphs(self):
+        return [self.get_subgraph(root_set) for root_set in self.root_partitioning]
+
     def copy(self, new_root_partitioning=None):
         if new_root_partitioning is None:
             new_root_partitioning = copy.copy(self.root_partitioning)
