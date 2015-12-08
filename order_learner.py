@@ -173,10 +173,8 @@ if __name__ == '__main__':
         print((best, val))
         goodness.append(swap_distance(best))
     print(summary(goodness), len(goodness))
-    """
     test_examples, test_labels = add_negative_examples(good_tests, 20)
-    test_features = [get_features(e) for e in test_examples]
+    test_features = [get_features(e, e.sentence_graphs()) for e in test_examples]
     predictions = reg.predict(test_features)
     print(reg.score(test_features, test_labels))
     print(reg)
-    """
