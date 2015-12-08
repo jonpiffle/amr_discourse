@@ -7,6 +7,8 @@ from amr_paragraph import SlidingWindowGenerator, AMRParagraph
 from partition import Partition
 from scorer import SubgraphSelectionScorer
 from optimizer import SubgraphOptimizer
+from amr_graph import AMRGraph, Edge, Node
+
 
 class GraphPartitioning(object):
     def __init__(self, p_graph, root_partitioning, subgraph_dict, complex_subgraph_dict):
@@ -14,7 +16,7 @@ class GraphPartitioning(object):
         self.root_partitioning = root_partitioning
         self.subgraph_dict = subgraph_dict
         self.complex_subgraph_dict = complex_subgraph_dict
-        self.ordering = None
+        self.order = None
 
     def get_subgraph(self, root_set):
         if root_set in self.complex_subgraph_dict:
@@ -28,6 +30,12 @@ class GraphPartitioning(object):
 
     def get_all_subgraphs(self):
         return [self.get_subgraph(root_set) for root_set in self.root_partitioning]
+
+    def get_ordered_root_sets(self):
+        if self.order is None:
+            raise ValueError("order attribute must be set before get_ordered_root_sets is called")
+        root_list = list(self.root_partitioning)
+        return [root_list[i] for i in self.order]
 
     def copy(self, new_root_partitioning=None):
         if new_root_partitioning is None:
@@ -69,12 +77,6 @@ def union_all(list_of_sets):
         s.update(set(next_s))
     return s
 
-def generate_paragraphs(filename, k=5, limit=None):
-    entries = FileParser().parse(filename, limit)
-    swg = SlidingWindowGenerator(entries)
-    paragraphs = swg.generate(k=k)
-    return paragraphs
-
 def get_positive_instance(paragraph):
     root_partitioning = set([frozenset(s.get_roots()) for s in paragraph.sentence_graphs()])
     subgraph_dict = {}
@@ -107,11 +109,8 @@ def get_negative_instances(paragraph, target_partition, k=100):
 def generate_instances_and_labels(paragraphs):
     instances, labels = [], []
     for i, paragraph in enumerate(paragraphs):
-        try:
-            positive_instance = get_positive_instance(paragraph)
-        except (ValueError, RuntimeError) as e:
-            print(i, e)
-            continue
+        print('generating subgraph features for instance %d' % i)
+        positive_instance = get_positive_instance(paragraph)
         instances.append(generate_features(paragraph.paragraph_graph(), positive_instance))
         labels.append(1)
 
@@ -132,6 +131,8 @@ def summary_statistics(lst):
     return [mean(lst), std_dev(lst), min(lst), max(lst)]
 
 def jaccard_similarity(s1, s2):
+    if len(s1 | s2) == 0:
+        return 0
     return len(s1 & s2) / float(len(s1 | s2))
 
 def subgraph_similarity(s1, s2):
@@ -155,20 +156,6 @@ def generate_features(p_graph, partition):
     features += summary_statistics([len(partition.get_subgraph(s1).get_verbs() & partition.get_subgraph(s2).get_verbs()) for s1, s2 in list(itertools.combinations(partition.root_partitioning, 2)) + [(s,s) for s in partition.root_partitioning]])
 
     return features
-
-def generate_train_test(limit=100, use_cache=True):
-    pickle_filename = 'test_train_limit_%d.pickle' % limit
-    if use_cache and os.path.exists(pickle_filename):
-        return pickle.load(open(pickle_filename, 'rb'))
-    else:
-        train = generate_paragraphs('amr.txt', limit=limit)
-        test = generate_paragraphs('amr_test.txt', limit=limit)
-        train_instances, train_labels = generate_instances_and_labels(train)
-        test_instances, test_labels = generate_instances_and_labels(test)
-        data = (train_instances, train_labels, test_instances, test_labels, test)
-        pickle.dump(data, open(pickle_filename, 'wb'))
-        return data
-
 
 if __name__ == '__main__':
     train_instances, train_labels, test_instances, test_labels, test = generate_train_test(use_cache=True)
