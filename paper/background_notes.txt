@@ -1,0 +1,7 @@
+Learning to Order Facts for Discourse Planning in Natural Language Generation
+=============================================================================
+-Goal is learn the most natural ordering of facts in discourse planning for a specific domain
+-Reiter and Dale (building applied NLG systems) view NLG as a 6-step pipeline where discourse planning is step #2
+-"Discourse planning determines the ordering and rhetorical relations of the logical messages, hereafter called facts"
+-"Our method consists of a se- quence of stages, the number of stages being equal to the number of facts to be conveyed by each document. Each stage is responsible for the selection of the fact to be placed at the corresponding position in the resulting document."
+-"In our experiments, we set the number of facts per document to six, which 24 per document to six, which seems to be an ap- propriate value for our particular domain and an average adult user, but this number could vary depending on the application and user type"
