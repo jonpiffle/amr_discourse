@@ -5,12 +5,14 @@ import argparse
 
 import numpy as np
 import numpy.random
+import pickle, os
 
 from amr_paragraph import SlidingWindowGenerator, generate_paragraphs
 from file_parser import FileParser
 from scorer import SubgraphSelectionScorer, OrderScorer, PipelineScorer
 from optimizer import SubgraphOptimizer, OrderOptimizer
 from subgraph_learner import generate_instances_and_labels as gen_subgraph_data
+from subgraph_learner import GraphPartitioning
 from order_learner import generate_instances_and_labels as gen_order_data
 
 def train():
@@ -38,7 +40,7 @@ def test():
     print('Loading amr data')
     paragraphs = generate_paragraphs('amr_test.txt', k=5)
     print('%d total cleaned paragraphs' % len(paragraphs))
-    paragraphs = paragraphs[:10]
+    paragraphs = paragraphs
 
     print('Testing Subgraph Selection Scorer')
     test_instances, test_labels = gen_subgraph_data(paragraphs, k=1)
@@ -55,8 +57,13 @@ def test():
     print('Testing Pipeline Scorer')
     pipeline_scorer = PipelineScorer()
     pipeline_scorer.load()
-    pipeline_scorer.test(paragraphs, subgraph_strategy='baseline', order_strategy='baseline')
-    pipeline_scorer.test(paragraphs, subgraph_strategy='greedy', order_strategy='anneal', processes=2)
+    baseline_graphs = pipeline_scorer.test(paragraphs, subgraph_strategy='baseline', order_strategy='baseline', processes=3)
+    greedy_graphs = pipeline_scorer.test(paragraphs, subgraph_strategy='greedy', order_strategy='greedy', processes=3)
+    anneal_graphs = pipeline_scorer.test(paragraphs, subgraph_strategy='greedy', order_strategy='anneal', processes=3)
+
+    pickle.dump(baseline_graphs, open('baseline_graphs.pickle', 'wb'))
+    pickle.dump(greedy_graphs, open('greedy_graphs.pickle', 'wb'))
+    pickle.dump(anneal_graphs, open('anneal_graphs.pickle', 'wb'))
 
 LEARNERS = {
 }
