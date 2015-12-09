@@ -125,9 +125,36 @@ Jaccard similarity, defined to be:
 $$J(A,B) = \frac{\lvert A \cap B \rvert}{\lvert A \cup B \rvert}$$
 
 \subsection{Subgraph Ordering}
-\subsection{Discrete Optimizations}
 
-Subgraph ordering solves the problem of ordering a set of AMR sentences.
+Once we have split a merged graph into a partition of $p$ sentences, there are
+$s!$ ways to order the sentences. Ideally, there exists some ordering of the
+sentences that communicates the ideas of the merged graph in the best possible
+way. Subgraph ordering is the problem of finding this optimal ordering.
+
+Once again, we assumed that the ordering of sentences in the dataset was the
+optimal ordering for that paragraph, so we needed to create non-optimal
+examples to train on. This was done by randomly reordering the sentences for
+$k=20$ reorderings for each paragraph.
+
+We trained a Ridge regression model on the dataset. For the labels of the
+training examples, we used the unnormalized Kendall's tau coefficient to
+determine the distance between a given ordering and the optimal.
+
+As noted in Related Work, our ordering model does not require the number of
+sentences to be fixed to a particular value. If it were to impose such a
+requirement, then the subgraph selection, which is further upstream in our
+pipeline, may not be able to find its optimal partitioning simply because it
+was a partitioning into a different number of sentences. As a result, our model
+could not rely on any features that deal with particular sentences (e.g. the
+similarity between the second and fifth sentences). So, we tried to use
+features that would generalize to paragraphs of any length, but would still
+vary with the ordering of those sentences within the paragraph, and all
+features had to be summarized (mean, standard deviation, min, max) over the
+paragraph. Features included the Jaccard similarity between adjancent
+sentences, between sentences that are two sentences apart, and the Jaccard
+similarity between the union of adjacent sentences and the overall paragraph.
+
+\subsection{Discrete Optimizations}
 
 \section{Evaluation of Scoring Modules}
 \subsection{Subgraph Selection}
