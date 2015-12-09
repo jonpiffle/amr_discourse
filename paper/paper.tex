@@ -63,14 +63,19 @@ of the NLG pipeline, discussed above and in \cite{applied_nlg}. After an
 information set has been structured into to pieces of information (``facts" or
 sentences), these pieces need to be ordered so that the reader can process and
 understand the information being conveyed as easily as possible. This is often
-approached as a planning problem, though Reiter and Dale explore using decision
+approached as a planning problem, though Dimitromanolaki and
+Androutsopoulos\cite{learning_to_order_facts} explore using pipelined decision
 trees and instance-based learning.
 
 \section{Related Work}
 
 Early work by Kukich described a system for ``knowledge-based report generation'' in which manually specified domain rules were used to merge database facts into higher level messages, which were then ordered by a discourse module \cite{kukich1983knowledge}. The ordered output could later be passed to generation system to build a report. Work by Paris in 1990 and Hovy in 1993 introduced the idea of using AI Planners to generate discourse plans. They focused on finding explicit discourse relations between messages and using planners to generate an ordering which was allowed under the constraints of the discourse relations identified \cite{paris1990natural}\cite{hovy1993automated}. More recently, Duboue and Mckeown applied Machine Learning (ML) approaches to discourse planning. In \cite{duboue2001empirically}, they present an algorithm to learn ordering constraints among facts. In \cite{duboue2002content}, they build upon this work, using evolutionary algorithms to learn the tree representation of a planner. Although these systems seek to generate valid discourse plans, they do not use a scoring function to choose the `best' among the many valid plans that are available. Dimitromanolaki and Androutsopoulos used ML techniques to learn such a scoring function \cite{learning_to_order_facts}. They train a pipeline of classifiers that repeatedly choose the next fact to be added to a paragraph for a specific domain.
+In order to train this pipeline, Dimitromanolaki and Androutsopoulos assume a
+fixed $k$ number of sentences per paragraph (in their paper $k=6$).
 
-Our work differs from this prior research in three major ways: (1) It is strictly at a semantic level. Our entire pipeline is built upon AMR semantics, rather than natural language `facts', meaning the internal entities and their relations can be reasoned about. (2) Higher-level messages are constructed as part of the discourse planning process. While other systems work at the individual fact level, our system seeks to group facts into higher level sentential messages that are ordered by our discourse module. The order of sentential units should be dependent on the information they contain, therefore the merging procedure must occur before or during the discourse planning. (3) Our system does not explicitly model the discourse relations between units.
+Our work differs from this prior research in four major ways: (1) It is strictly at a semantic level. Our entire pipeline is built upon AMR semantics, rather than natural language `facts', meaning the internal entities and their relations can be reasoned about. (2) Higher-level messages are constructed as part of the discourse planning process. While other systems work at the individual fact level, our system seeks to group facts into higher level sentential messages that are ordered by our discourse module. The order of sentential units should be dependent on the information they contain, therefore the merging procedure must occur before or during the discourse planning. (3) Our system does not explicitly model the discourse relations between units.
+(4) Our system imposes no limit on the number of sentences in a given
+paragraph.
 
 \section{Data}
 
