@@ -113,9 +113,19 @@ subgraphs is the original graph. Said more plainly, the problem is to split a
 concept graph into sentences, such that emitting all of the sentences would
 communicated all of the concepts in the original graph.
 
-For subgraph selection, we use a logistic regression model.
+For subgraph selection, we use a logistic regression model. We assumed that the
+AMR subgraphs in each of the paragraphs was the correct partitioning of the
+merged graph. This means that we had only positive examples in the training
+set, so we added negative examples by creating up to $k=100$ other
+partitionings of the same merged graph.
+
+Features included the length of the pairwise subgraph similarity, and pairwise
+verb overlap between the subgraphs. To determine subgraph similarity, we used
+Jaccard similarity, defined to be:
+$$J(A,B) = \frac{\lvert A \cap B \rvert}{\lvert A \cup B \rvert}$$
 
 \subsection{Subgraph Ordering}
+\subsection{Discrete Optimizations}
 
 Subgraph ordering solves the problem of ordering a set of AMR sentences.
 
