@@ -110,11 +110,13 @@ class PipelineScorer(Scorer):
         print('order_strategy: %s' % order_strategy)
         if processes > 1:
             p = Pool(processes)
-            kendall_taus = p.starmap(self.evaluate, [(t, subgraph_strategy, order_strategy) for t in test_paragraphs])
+            graphs, kendall_taus = zip(*p.starmap(self.evaluate, [(t, subgraph_strategy, order_strategy) for t in test_paragraphs]))
         else:
-            kendall_taus = [self.evaluate(test_paragraph, subgraph_strategy, order_strategy) for test_paragraph in test_paragraphs]
+            graphs, kendall_taus = zip(*[self.evaluate(test_paragraph, subgraph_strategy, order_strategy) for test_paragraph in test_paragraphs])
         print('mean, std_dev, min, max kendall tau: ', summary(kendall_taus))
+        print(kendall_taus)
         print()
+        return graphs
 
     def load(self):
         if os.path.exists(self.cache_filename):
@@ -129,7 +131,7 @@ class PipelineScorer(Scorer):
         test_root_ordering = best_graph_partition_with_order.get_ordered_root_sets()
         root_swaps = get_root_swaps(test_root_ordering, target_root_ordering)
         print(subgraph_strategy, order_strategy, root_swaps)
-        return root_swaps
+        return best_graph_partition_with_order, root_swaps
 
 def get_root_swaps(root_partitions, goal_root_partitions):
     def get_goal_partition_index(root):
