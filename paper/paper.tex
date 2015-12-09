@@ -66,8 +66,6 @@ articles. For an article with $n$ sentences, we could generate paragraphs
 containing sentences $(s_1,s_2,\ldots,s_k), (s_2,s_3,\ldots,s_k,s_{k+1}),
 \ldots (s_{n-k},s_{n-k+1},\ldots,s_n)$.
 
-An example sentence from our dataset, along with its first-order logic and AMR
-representations, follows.
 As an example from our dataset, ``A prosecutor in South Korea seized 80
 kilograms of drugs'' would have the following first-order logical form and AMR
 representation.\\
@@ -89,6 +87,9 @@ representation.\\
 \includegraphics[width=\linewidth]{amr_example.pdf}
 \caption{Example AMR}
 \end{figure}
+
+Our training set had 3493 ``paragraphs" of size $k=5$, and our test set had 507
+paragraphs.
 
 \section{Preprocessing}
 \subsection{ARG-of Reversal}
@@ -112,6 +113,8 @@ subgraphs which are optimal by some criterion, such that the union of the
 subgraphs is the original graph. Said more plainly, the problem is to split a
 concept graph into sentences, such that emitting all of the sentences would
 communicated all of the concepts in the original graph.
+
+For subgraph selection, we use a logistic regression model, trained on 
 
 \subsection{Subgraph Ordering}
 
