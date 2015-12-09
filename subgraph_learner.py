@@ -109,7 +109,6 @@ def get_negative_instances(paragraph, target_partition, k=100):
 def generate_instances_and_labels(paragraphs, k=100):
     instances, labels = [], []
     for i, paragraph in enumerate(paragraphs):
-        print('generating subgraph features for instance %d' % i)
         positive_instance = get_positive_instance(paragraph)
         instances.append(generate_features(paragraph.paragraph_graph(), positive_instance))
         labels.append(1)
@@ -145,6 +144,7 @@ def generate_features(p_graph, partition):
 
     # number of partitions
     features.append(len(partition.root_partitioning)) 
+    features.append(len(partition.root_partitioning) ** 2) 
 
     # mean, min, max, std_dev of #of fragments per partition
     features += summary_statistics([len(s) for s in partition.root_partitioning])
