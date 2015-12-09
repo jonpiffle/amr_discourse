@@ -96,8 +96,26 @@ representation.\\
 \subsection{Graph Merging}
 
 \section{System Architecture}
+
+From a high level, our system is a pipeline, which takes an AMR representation
+of the information set that is to be communicated as input, and outputs a set
+of AMR representations, which are the AMRs representing the sentences
+containing all of the information in the information set.
+
+To accomplish this task, we split the problem into two subproblems: (1)
+subgraph selection and (2) subgraph ordering.
+
 \subsection{Subgraph Selection}
+
+Subgraph selection solves the problem of splitting an AMR graph into a set of
+subgraphs which are optimal by some criterion, such that the union of the
+subgraphs is the original graph. Said more plainly, the problem is to split a
+concept graph into sentences, such that emitting all of the sentences would
+communicated all of the concepts in the original graph.
+
 \subsection{Subgraph Ordering}
+
+Subgraph ordering solves the problem of ordering a set of AMR sentences.
 
 \section{Evaluation of Scoring Modules}
 \subsection{Subgraph Selection}
