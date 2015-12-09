@@ -21,27 +21,7 @@ semantic representation of natural language sentences. Unlike syntactic
 annotations, semantic annotations often differ for different semantic relations
 (named entities, temporal entities, co-referencing, etc). AMR, by contrast,
 provides a single, graphical representation of the logical meaning of a
-sentence, which can be easily understood by both humans and computers. For
-example, given the sentence ``A prosecutor in South Korea seized 80 kilograms
-of drugs'', we can construct the following logical form and AMR.\\
-
-\noindent \textbf{Logical form}:
-\begin{equation}
-\begin{split}
-\exists s,d2,p2,c,n: &\\
-&\text{instance}(s,want\text{-}01) \wedge \text{instance}(d2, drug) \wedge \\
-&\text{instance}(p2, prosecutor) \wedge \text{instance}(c, country) \wedge \\
-&\text{instance}(n, name) \wedge \text{arg0}(s,p2) \wedge \text{arg1}(s,d2)
-\wedge \\ &\text{arg2}(s,c) \wedge \text{name}(c,n) \wedge \text{op1}(n,
-``South") \wedge \\ &\text{op2}(n, ``Korea") \wedge \text{unit}(d2, kilogram)
-\wedge \text{quant}(d2, 80)
-\end{split}
-\end{equation}
-\textbf{AMR form}:
-\begin{figure}
-\includegraphics[width=\linewidth]{amr_example.pdf}
-\caption{Example AMR}
-\end{figure}
+sentence, which can be easily understood by both humans and computers.
 
 An AMR-annotated sentence is directed, rooted, labeled graph, or as a
 conjunction of logical triples. Throughout this paper, we work with the AMRs
@@ -78,6 +58,37 @@ Our work differs from this prior research in four major ways: (1) It is strictly
 paragraph.
 
 \section{Data}
+
+The dataset for this research was a corpus of AMR-annotated sentences obtained
+from newswire data. Since the source text of the articles was unavailable, we
+used a sliding window approach to generate ``paragraphs" of size $k$ from the
+articles. For an article with $n$ sentences, we could generate paragraphs
+containing sentences $(s_1,s_2,\ldots,s_k), (s_2,s_3,\ldots,s_k,s_{k+1}),
+\ldots (s_{n-k},s_{n-k+1},\ldots,s_n)$.
+
+An example sentence from our dataset, along with its first-order logic and AMR
+representations, follows.
+As an example from our dataset, ``A prosecutor in South Korea seized 80
+kilograms of drugs'' would have the following first-order logical form and AMR
+representation.\\
+
+\noindent \textbf{Logical form}:
+\begin{equation}
+\begin{split}
+\exists s,d2,p2,c,n: &\\
+&\text{instance}(s,want\text{-}01) \wedge \text{instance}(d2, drug) \wedge \\
+&\text{instance}(p2, prosecutor) \wedge \text{instance}(c, country) \wedge \\
+&\text{instance}(n, name) \wedge \text{arg0}(s,p2) \wedge \text{arg1}(s,d2)
+\wedge \\ &\text{arg2}(s,c) \wedge \text{name}(c,n) \wedge \text{op1}(n,
+``South") \wedge \\ &\text{op2}(n, ``Korea") \wedge \text{unit}(d2, kilogram)
+\wedge \text{quant}(d2, 80)
+\end{split}
+\end{equation}
+\textbf{AMR form}:
+\begin{figure}
+\includegraphics[width=\linewidth]{amr_example.pdf}
+\caption{Example AMR}
+\end{figure}
 
 \section{Preprocessing}
 \subsection{ARG-of Reversal}
