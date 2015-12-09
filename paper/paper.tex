@@ -1,5 +1,7 @@
 \documentclass[12pt]{article}
 
+\usepackage[section]{algorithm}
+\usepackage{algorithmic}
 \usepackage{amsmath}
 \usepackage{cite}
 \usepackage{graphicx}
@@ -10,6 +12,7 @@
 \begin{document}
 \maketitle
 \tableofcontents
+\listofalgorithms
 \pagebreak
 
 \section{Introduction}
@@ -154,7 +157,48 @@ paragraph. Features included the Jaccard similarity between adjancent
 sentences, between sentences that are two sentences apart, and the Jaccard
 similarity between the union of adjacent sentences and the overall paragraph.
 
-\subsection{Discrete Optimizations}
+\subsection{Discrete Optimization}
+
+In both subproblems, we trained classifiers which assign a score to how ``good"
+an instance is with regard to that problem. So, to find the best instance, we
+could just enumerate all possible permutations or combinations of the input,
+and select the instance which maximizes (or, in the case of subgraph ordering,
+minimizes) the classifier's score. However, in the case of subgraph selection,
+for a paragraph of $n$ facts, there are $O(2^n)$ possible partitions. In the
+case of subgraph ordering, for a paragraph of $n$ sentences, there are $O(n!)$
+possible orderings. Neither of these are very computationally efficient, so we
+perform discrete optimization to approach an optimal solution, rather than
+enumerating all possible inputs. It is worth noting that in practice, this is
+more of a problem for the subgraph selection module, since the partitions
+returned by the subgraph selector are generally not too large, so $n$ for the
+subgraph orderer is not too bad.
+
+For discrete optimization, we implemented a greedy search procedure as follows:
+\begin{algorithm}
+\caption{Greedy search procedure}
+\label{greedy_search_alg}
+\begin{algorithmic}
+\STATE Input: $s$ // start state \\
+\STATE Input: $classifier$ \\
+\STATE $Q \gets [s]$ // queue of states to visit \\
+\STATE $opt, optv, oldoptv \gets null, 0, 1$
+\WHILE{$Q\neq\emptyset$ and $optv \neq oldoptv$}
+    \STATE $S \gets \{s: s \in Q \}$
+    \STATE $Q \gets \emptyset$
+    \STATE $oldoptv \gets optv$
+    \FORALL{$s \in S$}
+        \STATE $N \gets neighbors(s)$\\
+        \STATE Add all elements of $N$ to $Q$\\
+        \IF{$classifier.score(s) > optv$}
+            \STATE $opt, optv \gets s, classifier.score(s)$\\
+        \ENDIF
+    \ENDFOR
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+Additionally, we used a simmulated annealing approach, but only for the
+subgraph ordering problem.
 
 \section{Evaluation of Scoring Modules}
 \subsection{Subgraph Selection}
