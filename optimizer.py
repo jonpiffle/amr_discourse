@@ -1,4 +1,4 @@
-import itertools, copy
+import itertools, copy, random
 
 import numpy as np
 import numpy.random
@@ -89,7 +89,7 @@ class GraphPartitionState(SearchState):
         self.partition = partition
         self.scorer = scorer
 
-    def get_neighbors(self):
+    def get_neighbors(self, cutoff=100):
         neighbors = []
         root_partitioning = self.partition.root_partitioning
         for s1, s2 in itertools.combinations(root_partitioning, 2):
@@ -97,9 +97,11 @@ class GraphPartitionState(SearchState):
             root_partition_copy.remove(s1)
             root_partition_copy.remove(s2)
             root_partition_copy.add(s1|s2)
-            new_partitition = self.partition.copy(root_partition_copy)
-            neighbors.append(GraphPartitionState(self.p_graph, new_partitition, self.scorer))
-        return neighbors
+            if len(root_partition_copy) >= 2:
+                new_partitition = self.partition.copy(root_partition_copy)
+                neighbors.append(GraphPartitionState(self.p_graph, new_partitition, self.scorer))
+        random.shuffle(neighbors)
+        return neighbors[:cutoff]
 
     def evaluate(self):
         from subgraph_learner import generate_features
@@ -113,6 +115,7 @@ class SubgraphOrderSearchState(SearchState):
         self.order = order
         self.sgraphs = sgraphs
         self.scorer = scorer
+        self.partition = None
 
     def get_neighbors(self):
         states = []
