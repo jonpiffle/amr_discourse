@@ -1,10 +1,17 @@
 # ::id PROXY_APW_ENG_20030603_0375.7 ::date 2013-08-26T17:30:21 ::snt-type body ::annotator UCO-AMR-05 ::preferred
-# ::snt Prosecutors in South Korea seized 80 kilograms of drugs.
+# ::snt A prosecutor in South Korea seized 80 kilograms of drugs.
 # ::save-date Tue Aug 27, 2013 ::file PROXY_APW_ENG_20030603_0375_7.txt
 (s / seize-01
       :ARG0 (p2 / prosecutor)
       :ARG1 (d2 / drug :quant 80 :unit "kilogram")
       :location (c / country :name (n / name :op1 "South" :op2 "Korea")))
+
+# ::id PROXY_APW_ENG_20030603_0375.7.5 ::date 2013-08-26T17:30:21 ::snt-type body ::annotator UCO-AMR-05 ::preferred
+# ::snt The prosecutor disposed of the drugs.
+# ::save-date Tue Aug 27, 2013 ::file PROXY_APW_ENG_20030603_0375_7.5.txt
+(d / dispose-01
+      :ARG0 (p / prosecutor)
+      :ARG1 (d2 / drug))
 
 # ::id PROXY_APW_ENG_20030603_0375.8 ::date 2013-08-27T13:55:17 ::snt-type body ::annotator UCO-AMR-05 ::preferred
 # ::snt South Korean media stated the drugs originated from North Korea.
@@ -17,7 +24,7 @@
                   :ARG2 (c2 / country :name (n2 / name :op1 "North" :op2 "Korea"))))
 
 # ::id PROXY_APW_ENG_20030603_0375.9 ::date 2013-08-26T17:30:21 ::snt-type body ::annotator UCO-AMR-05 ::preferred
-# ::snt Prosecutors in South Korea seized 80 kilograms of drugs and dozens of weapons.
+# ::snt A prosecutor in South Korea seized 80 kilograms of drugs and dozens of weapons.
 # ::save-date Tue Aug 27, 2013 ::file PROXY_APW_ENG_20030603_0375_9.txt
 (s / seize-01
       :ARG0 (p2 / prosecutor)
@@ -26,12 +33,10 @@
             :op2 (w / weapons :quant "dozens"))
       :location (c / country :name (n / name :op1 "South" :op2 "Korea")))
 
-# ::id PROXY_APW_ENG_20030603_0375.10 ::date 2013-08-27T13:55:17 ::snt-type body ::annotator UCO-AMR-05 ::preferred
-# ::snt South Korean media stated the drugs originated from North Korea.
+# ::id PROXY_APW_ENG_20030603_0375.10 ::date 2013-08-26T17:30:21 ::snt-type body ::annotator UCO-AMR-05 ::preferred
+# ::snt A prosecutor in South Korea seized 80 kilograms of drugs.
 # ::save-date Tue Aug 27, 2013 ::file PROXY_APW_ENG_20030603_0375_10.txt
-(s / state-01
-      :ARG0 (m / media
-            :mod (c / country :name (n / name :op1 "South" :op2 "Korea")))
-      :ARG1 (d / drug
-                  :ARG1-of (o / originate-01
-                        :ARG2 (c2 / country :name (n2 / name :op1 "North" :op2 "Korea")))))
+(p2 / prosecutor
+      :ARG0-of (s / seize-01
+            :ARG1 (d2 / drug :quant 80 :unit "kilogram")
+            :location (c / country :name (n / name :op1 "South" :op2 "Korea"))))
