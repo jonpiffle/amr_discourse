@@ -1,6 +1,5 @@
 \documentclass[12pt]{article}
 
-%\usepackage[backend=bibtex]{biblatex}
 \usepackage{cite}
 
 \title{Title}
@@ -11,9 +10,22 @@
 \tableofcontents
 
 \section{Introduction}
-
 \section{Background}
-\subsection{AMR}
+\subsection{Semantic Representation}
+
+Abstract Meaning Representation (AMR)\cite{amr_sembank} attempts to unify the
+semantic representation of natural language sentences. Unlike syntactic
+annotations, semantic annotations often differ for different semantic relations
+(named entities, temporal entities, co-referencing, etc). AMR, by contrast,
+provides a single, graphical representation of the logical meaning of a
+sentence, which can be easily understood by both humans and computers. For
+example, % TODO: example sentence in AMR + graphical form here
+
+An AMR-annotated sentence is directed, rooted, labeled graph, or as a
+conjunction of logical triples. Throughout this paper, we work with the AMRs
+exclusively in the graphical form $G=(V,E)$, and will thus refer to the AMR
+using just the sets $V,E$.
+
 \subsection{Discourse Planning}
 
 In Reiter and Dale's {\em Building Applied Natural Language Generation Systems}, they outline a 6-module pipeline for an NLG system. The second task in this system is Discourse Planning, which they describe as the process of imposing ordering and structure over the set of messages to be conveyed \cite{applied_nlg}. The order of pieces of information in text is not random; rather authors impose a structure on the messages for reasons such as: making the text easier to understand, highlighting the relationships between messages in the text, or stylistic preferences.When making an argument, authors must order the messages so that readers can see the logical implications from one message to the next; if the ordering of the messages were scrambled, readers may fail to understand the argument, even though the same set of information was communicated.
@@ -52,5 +64,4 @@ Our work differs from this prior research in three major ways: (1) It is strictl
 \pagebreak
 \bibliographystyle{acm}
 \bibliography{paper}
-
 \end{document}
