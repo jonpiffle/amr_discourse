@@ -37,8 +37,11 @@ of drugs'', we can construct the following logical form and AMR.\\
 \wedge \text{quant}(d2, 80)
 \end{split}
 \end{equation}
-\textbf{AMR form}:\\
+\textbf{AMR form}:
+\begin{figure}
 \includegraphics[width=\linewidth]{amr_example.pdf}
+\caption{Example AMR}
+\end{figure}
 
 An AMR-annotated sentence is directed, rooted, labeled graph, or as a
 conjunction of logical triples. Throughout this paper, we work with the AMRs
@@ -54,6 +57,14 @@ In addition to just logical implication, adjacent sentences can have many differ
 In applied systems, discourse planning is usually implemented through either schema-based systems or AI planning systems \cite{applied_nlg}. In schema-based systems, messages are given class labels, and are substituted into the appropriate slots which have been predefined in each schema. AI planning is a more general solution in which planning operators are associated with discourse relations, and then off-the-shelf planners can be used to construct a valid discourse plan \cite{hovy1993automated}\cite{paris1990natural}.
 
 \subsection{Information Ordering}
+
+Information ordering is an integral component of the Discourse Planning phase
+of the NLG pipeline, discussed above and in \cite{applied_nlg}. After an
+information set has been structured into to pieces of information (``facts" or
+sentences), these pieces need to be ordered so that the reader can process and
+understand the information being conveyed as easily as possible. This is often
+approached as a planning problem, though Reiter and Dale explore using decision
+trees and instance-based learning.
 
 \section{Related Work}
 
