@@ -55,6 +55,14 @@ In applied systems, discourse planning is usually implemented through either sch
 
 \subsection{Information Ordering}
 
+Information ordering is an integral component of the Discourse Planning phase
+of the NLG pipeline, discussed above and in \cite{applied_nlg}. After an
+information set has been structured into to pieces of information (``facts" or
+sentences), these pieces need to be ordered so that the reader can process and
+understand the information being conveyed as easily as possible. This is often
+approached as a planning problem, though Reiter and Dale explore using decision
+trees and instance-based learning.
+
 \section{Related Work}
 
 Early work by Kukich described a system for ``knowledge-based report generation'' in which manually specified domain rules were used to merge database facts into higher level messages, which were then ordered by a discourse module \cite{kukich1983knowledge}. The ordered output could later be passed to generation system to build a report. Work by Paris in 1990 and Hovy in 1993 introduced the idea of using AI Planners to generate discourse plans. They focused on finding explicit discourse relations between messages and using planners to generate an ordering which was allowed under the constraints of the discourse relations identified \cite{paris1990natural}\cite{hovy1993automated}. More recently, Duboue and Mckeown applied Machine Learning (ML) approaches to discourse planning. In \cite{duboue2001empirically}, they present an algorithm to learn ordering constraints among facts. In \cite{duboue2002content}, they build upon this work, using evolutionary algorithms to learn the tree representation of a planner. Although these systems seek to generate valid discourse plans, they do not use a scoring function to choose the `best' among the many valid plans that are available. Dimitromanolaki and Androutsopoulos used ML techniques to learn such a scoring function \cite{learning_to_order_facts}. They train a pipeline of classifiers that repeatedly choose the next fact to be added to a paragraph for a specific domain.
