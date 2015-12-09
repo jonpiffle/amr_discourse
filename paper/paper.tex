@@ -59,13 +59,12 @@ paragraph.
 
 \section{Data}
 
-The dataset for this research was a corpus of AMR-annotated sentences obtained
-from newswire data. Since the source text of the articles was unavailable, we
-used a sliding window approach to generate ``paragraphs" of size $k$ from the
-articles. For an article with $n$ sentences, we could generate paragraphs
-containing sentences $(s_1,s_2,\ldots,s_k), (s_2,s_3,\ldots,s_k,s_{k+1}),
-\ldots (s_{n-k},s_{n-k+1},\ldots,s_n)$.
-
+The dataset for this research was the AMR ``proxy" dataset - a corpus of
+AMR-annotated sentences obtained from newswire data. Since the source text of
+the articles was unavailable, we used a sliding window approach to generate
+``paragraphs" of size $k$ from the articles. For an article with $n$ sentences,
+we could generate paragraphs containing sentences $(s_1,s_2,\ldots,s_k),
+(s_2,s_3,\ldots,s_k,s_{k+1}), \ldots (s_{n-k},s_{n-k+1},\ldots,s_n)$.
 As an example from our dataset, ``A prosecutor in South Korea seized 80
 kilograms of drugs'' would have the following first-order logical form and AMR
 representation.\\
@@ -114,7 +113,7 @@ subgraphs is the original graph. Said more plainly, the problem is to split a
 concept graph into sentences, such that emitting all of the sentences would
 communicated all of the concepts in the original graph.
 
-For subgraph selection, we use a logistic regression model, trained on 
+For subgraph selection, we use a logistic regression model.
 
 \subsection{Subgraph Ordering}
 
