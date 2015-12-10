@@ -216,15 +216,15 @@ On potential issue arises when a node in one graph has multiple equivalent nodes
 
 \section{System Architecture}
 
-From a high level, our system is a pipeline, which takes an AMR representation
-of the information set that is to be communicated as input, and outputs a
-sequence of AMR representations, which are the AMRs representing the sentences
-containing all of the information in the information set.
+From a high level, our system is a pipeline, which takes as input an AMR representation
+of all information that is to be communicated, and outputs a
+sequence of AMR representations, which are the AMRs representing a sequence of sentence semantics that could be used to communicate the 
+information set.
 
 To accomplish this task, we split the problem into two subproblems: (1)
 subgraph selection and (2) subgraph ordering.
 
-For each subproblem, a learner was trained that could score the ``goodness" of
+For each subproblem, a scoring function was trained to evaluate the ``goodness" of
 a given partitioning or ordering, depending on the problem. To find the best
 possible partitioning or ordering, we use a greedy search optimization
 procedure, which is described more fully in ``Discrete Optimization".
@@ -234,12 +234,12 @@ procedure, which is described more fully in ``Discrete Optimization".
 
 Subgraph selection solves the problem of splitting an AMR graph into a set of
 subgraphs which are optimal by some criterion, such that the union of the
-subgraphs is the original graph. Said more plainly, the problem is to split the paragraph-level semantic graph 
-into a set sentence-level semantic graphs.
+subgraphs is the original graph. Said more plainly, the problem is to split the paragraph-level semantic graph into groups of information
+which are sentence-level semantic graphs.
 
-There are $2^{|E|}$ subgraphs for a graph with $|E|$ edges. If we consider every set of $N$ subgraphs, we would have to consider $N^{2^{|E|}}$ sets of subgraphs! Obviously this is infeasible. Fortunately, we can exploit the natural language characteristics of a semantic graph to dramatically reduce the number of subgraph sets we have to consider. 
+There are $2^{|E|}$ subgraphs for a paragraph graph with $|E|$ edges. If we consider every set of $N$ subgraphs, we would have to consider $N^{2^{|E|}}$ sets of subgraphs! Obviously this is infeasible. Fortunately, we can exploit the natural language characteristics of a semantic graph to dramatically reduce the number of subgraph sets we have to consider. 
 
-First, we define a {\em fact} in our semantic graph as the subgraph formed by performing a graph-traversal on a root of the graph (that is, a node with no parents). An example is shown in figure \ref{fig:amr_example_3_merged_s1_highlighted}. By design, the roots of an AMR graph will be verb instances. Therefore, we can intuitively think of the rooted graph traversal as a verb + the required graph pieces to fulfill the verb's arguments. A fact, then, is the the smallest piece of a graph that could be used to fully specify the semantics of a sentence during generation. Let $F$ refer to the set of facts in our graph.
+First, we define a {\em fact} in our semantic graph as the subgraph formed by performing a graph-traversal from a root of the graph (that is, a node with no parents). An example is shown in Figure \ref{fig:amr_example_3_merged_s1_highlighted}. By design, the roots of an AMR graph will be verb instances; therefore, we can intuitively think of the rooted graph traversal as a verb + the required graph pieces to fulfill the verb's arguments. Because a syntactically correct sentence requires a verb and its arguments, a {\em fact} is the the smallest piece of a graph that could be used to fully specify the semantics of a sentence. Let $F$ refer to the set of all facts in our graph.
 
 \begin{figure}
 \includegraphics[width=\linewidth]{amr_example_3_merged_s1_highlighted.pdf}
@@ -250,7 +250,7 @@ First, we define a {\em fact} in our semantic graph as the subgraph formed by pe
 Given $F$, our set of facts, and the assumption that we do not want to say the exact same thing twice, we can reduce our search-space to the set of partitions of $F$ from size 1 to $|F|$ (a single group with $|F|$ facts to $|F|$ groups each with 1 fact). The size of our candidate set is now given by $B_{|F|}$, where $B_i$ is the $i^{\text{th}}$ Bell number.
 
 \subsubsection{Training}
-Our problem then is to find the best partition from the $B_{|F|}$ candidates. To do this, we trained a scoring function using a logistic regression model with class-weighted instances. We assumed that the partitioning given by the sentences in a paragraph was the correct partitioning, and gave it a label of $1$. This means that we had only positive examples in the training set, so we added negative examples by sampling $k$ other partitions from the set of partitions, giving each a label of $0$.
+Our problem then is to find the best partition from the $B_{|F|}$ candidates. To do this, we trained a scoring function using a logistic regression model with class-weighted instances. We assumed that the fact-partition given by the sentences of a paragraph was correct, and gave it a label of $1$. This means that we had only positive examples in the training set, so we added negative examples by sampling $k$ other valid partitions, giving each a label of $0$.
 
 Table \ref{tab:subgraph_selection_features} lists the features extracted for each candidate partition. To determine subgraph similarity, we used
 Jaccard similarity, defined to be:
@@ -282,9 +282,9 @@ std\_dev pairwise verb set similarity & -0.17388411     \\ \bottomrule
 
 \subsubsection{Test}
 
-We can test each component of the pipeline in isolation before combining them, to see how well each is performing. To test the Subgraph Selection scorer, I started with the 214 partitions in our test dataset (each with label 1), and sampled a random partition (with label 0) for a class-balanced test dataset with 428 instances. I generated features for each instance and ran the test set through the classifier, which later serves as a scoring function. The evaluation metrics are reported in table \ref{tab:subgraph_selection_eval}. The classifier performs very well in isolation; this is expected as it is just differentiating partitions between ``actual subgraph partition" and ``random subgraph partition''.
+To test the Subgraph Selection scorer, we started with the 214 partitions in our test dataset (each with label 1), and for each one sampled a random partition (with label 0), resulting in a class-balanced test dataset with 428 instances. Features were generated for each instance and the test set was passed through the classifier. The evaluation metrics are reported in table \ref{tab:subgraph_selection_eval}. The classifier performs very well in isolation; this is expected as it is differentiating partitions between ``actual subgraph partition" and ``random subgraph partition''.
 
-In addition to evaluating the test set, we can inspect the feature weights in Table \ref{tab:subgraph_selection_features} to get an idea of what the scoring function is doing. Looking at the first two features, we see that very small and very large paragraphs are penalized (since the ``number of sentences'' feature is positive but the square is negative). After that, we see the two most important features are the mean and standard deviation of the pairwise subgraph similarity; both features have large negative values. The large negative value on the mean pairwise subgraph similarity implies that the classifier prefers paragraphs for which similar facts are grouped into the same sentence, rather than spread throughout the paragraph. The negative value on the standard deviation implies that the classifier prefers a uniform rate of new information introduced in each sentence; there should be the same amount of information overlap between sentences.
+In addition to evaluating the test set, we can inspect the feature weights in Table \ref{tab:subgraph_selection_features} to get an idea of what the scoring function is doing. Looking at the first two features, we see that very small and very large paragraphs are penalized (since the ``number of sentences'' feature is positive but the square is negative). After that, we see the two most important features are the mean and standard deviation of the pairwise subgraph similarity. Both features have large negative values. The large negative value on the mean pairwise subgraph similarity implies that the classifier prefers paragraphs for which similar facts are grouped into the same sentence, rather than spread throughout the paragraph. The negative value on the standard deviation implies that the classifier prefers a uniform rate of new information introduced in each sentence.
 
 \begin{table}[H]
 \centering
@@ -300,7 +300,7 @@ In addition to evaluating the test set, we can inspect the feature weights in Ta
 \subsection{Subgraph Ordering}
 \subsubsection{Problem Description}
 
-Once we have split a merged graph into a partition of $p$ sentences, there are
+Once we have split our semantic graph into a partition of $p$ sentence graphs, there are
 $s!$ ways to order the sentences. Ideally, there exists some ordering of the
 sentences that communicates the ideas of the merged graph in the best possible
 way. Subgraph ordering is the problem of finding this optimal ordering.
@@ -309,12 +309,12 @@ way. Subgraph ordering is the problem of finding this optimal ordering.
 
 Once again, we assumed that the ordering of sentences in the dataset was the
 optimal ordering for that paragraph, so we needed to create non-optimal
-examples to train on. This was done by randomly reordering the sentences for
-$k=20$ reorderings for each paragraph.
+examples to train on as well. This was done by randomly generating
+$k=20$ sentence reorderings for each paragraph.
 
-We trained a Ridge regression model on the dataset. For the labels of the
-training examples, we used the unnormalized Kendall's tau coefficient to
-determine the distance between a given ordering and the optimal.
+We trained a Ridge regression model on the dataset to predict the Kendall Tau Distance of the ordering
+(the distance between a given ordering and the optimal). This is in accordance with prior work, suggesting
+the use of this metric \cite{lapata2006automatic}.
 
 As noted in Related Work, our ordering model does not require the number of
 sentences to be fixed to a particular value. If it were to impose such a
@@ -324,15 +324,16 @@ was a partitioning into a different number of sentences. As a result, our model
 could not rely on any features that deal with particular sentences (e.g. the
 similarity between the second and fifth sentences). So, we tried to use
 features that would generalize to paragraphs of any length, but would still
-vary with the ordering of those sentences within the paragraph, and all
-features had to be summarized (mean, standard deviation, min, max) over the
+vary with the ordering of those sentences within the paragraph. To ensure we 
+had the same number of features for each instance, all features had to be summarized (mean, standard deviation, min, max) over the
 paragraph. Features included the Jaccard similarity between adjancent
 sentences, between sentences that are two sentences apart, and the Jaccard
 similarity between the union of adjacent sentences and the overall paragraph.
-The following table summarizes the features used for subgraph ordering:
+Table \ref{tab:order_features} summarizes the features used for subgraph ordering.
 
 \begin{table}
 \centering
+\label{tab:order_features}
 \begin{tabular}{|r|c|c|}
 \hline
 Feature & \\ \hline\hline
@@ -391,8 +392,8 @@ ordering and the correct ordering, to use as a baseline. Then, we perform a
 greedy search discrete optimization as described above using the subgraph
 ordering model to compute the scores of the various orderings.
 
-The mean, standard deviation, min and max for both the baseline and greedy
-Kendall tau  are reported in the table below.
+The mean, standard deviation, min, and max for both the baseline and greedy
+Kendall tau are reported in Table \ref{tab:order_eval}.
 
 \begin{table}
 \centering
@@ -402,6 +403,7 @@ Approach & Mean  & Std.  & Min & Max \\ \hline\hline
 Baseline & 5.009 & 2.091 & 0   & 10  \\ \hline
 Greedy   & 1.360 & 0.910 & 0   & 5   \\ \hline
 \end{tabular}
+\label{tab:order_eval}
 \caption{Evaluation results for Subgraph Ordering}
 \end{table}
 
@@ -412,17 +414,15 @@ In both subproblems, we trained classifiers which assign a score to how ``good"
 an instance is with regard to that problem. So, to find the best instance, we
 could just enumerate all possible permutations or combinations of the input,
 and select the instance which maximizes (or, in the case of subgraph ordering,
-minimizes) the classifier's score. However, in the case of subgraph selection,
-for a paragraph of $n$ facts, there are $O(2^n)$ possible partitions. In the
-case of subgraph ordering, for a paragraph of $n$ sentences, there are $O(n!)$
-possible orderings. Neither of these are very computationally efficient, so we
+minimizes) the classifier's score. However, in both cases, there is an exponential number of possible orderings.
+It is not computationally feasible to evaluate each, so we
 perform discrete optimization to approach an optimal solution, rather than
 enumerating all possible inputs. It is worth noting that in practice, this is
-more of a problem for the subgraph selection module, since the partitions
-returned by the subgraph selector are generally not too large, so $n$ for the
-subgraph orderer is not too bad.
+more of a problem for the subgraph selection module, since the number of partitions
+returned by the subgraph selector is generally not too large.
 
-For discrete optimization, we implemented a greedy search procedure as follows:
+For discrete optimization, we implemented a greedy search outlined in Algorithm \ref{greedy_search_alg}.
+
 \begin{algorithm}
 \caption{Greedy search procedure}
 \label{greedy_search_alg}
@@ -446,7 +446,7 @@ For discrete optimization, we implemented a greedy search procedure as follows:
 \end{algorithmic}
 \end{algorithm}
 
-Additionally, we used a simulated annealing approach, but only for the
+In addition to the greedy search, we experimented with simulated annealing for the
 subgraph ordering problem.
 
 \subsection{Pipeline}
