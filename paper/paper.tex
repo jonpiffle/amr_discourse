@@ -96,7 +96,7 @@ representation.\\
 \caption{Example AMR}
 \end{figure}
 
-Our training set had 3493 ``paragraphs" of size $k=5$, and our test set had 507
+Our training set had 1676 ``paragraphs" of size $k=5$, and our test set had 214
 paragraphs.
 
 \section{Preprocessing}
@@ -215,8 +215,8 @@ The only issue of concern during graph merging is what to do when a node in one 
 \section{System Architecture}
 
 From a high level, our system is a pipeline, which takes an AMR representation
-of the information set that is to be communicated as input, and outputs a set
-of AMR representations, which are the AMRs representing the sentences
+of the information set that is to be communicated as input, and outputs a
+sequence of AMR representations, which are the AMRs representing the sentences
 containing all of the information in the information set.
 
 To accomplish this task, we split the problem into two subproblems: (1)
