@@ -450,8 +450,8 @@ subgraph ordering problem.
 
 \subsection{Pipeline}
 
-To contsruct the entire pipeline, we trained a subgraph selector and subgraph
-ordeer separately and combined them in the following manner:
+To construct the entire pipeline, we trained the subgraph selector and subgraph
+orderer separately and combined them via Algorithm \ref{pipeline_procedure}.
 
 \begin{algorithm}
 \caption{Full Pipeline}
@@ -468,23 +468,23 @@ orderings of the subgraphs in $p'$ to find an optimal ordering $o'$.
 \end{algorithmic}
 \end{algorithm}
 
-To evaluate the pipeline as a whole, we used a revised Kendall's tau metric, in
-accordance with \cite{lapata2006automatic}. To score both the selection and
-ordering simultaneously, we count the number of facts which are out of order.
+To evaluate the pipeline as a whole, we used a revised Kendall's tau metric. 
+To score both the selection and ordering simultaneously, we count the number of facts which are out of order.
 This accounts for mistakes both in the subgraph selection, where a fact is
-placed in the wrong set of facts, and in the subgraph ordering, where a group
-of facts is placed in the wrong order.
+placed in the wrong sentence, and in the subgraph ordering, where a sentence
+is placed in the wrong order.
 
 \section{Experiments}
 
-We trained a subgraph selector and orderer on our training dataset and
-constructed a pipeline as described above. To establish a baseline, we ran the
+We trained the subgraph selector and orderer on our training dataset and
+constructed a pipeline as described in Algorithm \ref{pipeline_procedure}.
+To establish a baseline, we ran the
 pipeline against our test set, but rather than perform discrete optimization,
-each optimizer just computed a random sampling of the possible partitionings or
-orderings.
+each optimizer used a random sampling from the possible partitions and 
+orderings respectively.
 
 Next, we ran the pipeline again, this time using our discrete optimizations.
-We implemented only greedy search for the subgraph selection problem, but used
+We implemented only greedy search for the subgraph selection problem, but ran experiments with
 both greedy search and simulated annealing for the subgraph ordering problem.
 
 Table \ref{tab:experiments} summarizes the mean, standard deviation, min and max of the
@@ -497,9 +497,9 @@ revised Kendall tau metric for each experiment.
 \begin{tabular}{@{}lllll@{}}
 \toprule
 \textbf{(Selection, Ordering)} & \textbf{Mean} & \textbf{Std. Dev.} & \textbf{Min} & \textbf{Max} \\ \midrule
-Baseline, Baseline & 40.967289719626166 & 62.38075619228794 & 0 & 634 \\
-Greedy, Greedy & 36.434579439252339 & 61.217880539269935 & 2 & 563 \\
-Greedy, Annealing & 34.481308411214954 & 50.605189107869165 & 2 & 411 \\ \bottomrule
+Baseline, Baseline & 40.97 & 62.38 & 0 & 634 \\
+Greedy, Greedy & 36.43 & 61.22 & 2 & 563 \\
+Greedy, Annealing & 34.48 & 50.60 & 2 & 411 \\ \bottomrule
 \end{tabular}
 \end{table}
 
@@ -518,11 +518,10 @@ sentence, than the baseline.
 \label{tab:metrics}
 \begin{tabular}{@{}lll@{}}
 \toprule
-\textbf{(Selection, Ordering)} & \textbf{Mean \# of Sentences} & \textbf{Mean \#
-of Facts per Sentence} \\ \midrule
-Baseline, Baseline & 6.1074766355140184 & 2.3297628156082633 \\
-Greedy, Greedy & 5.8130841121495331 & 2.447749196141479 \\
-Greedy, Annealing & 5.8130841121495331 & 2.447749196141479 \\ \bottomrule
+\textbf{(Selection, Ordering)} & \textbf{Mean \# Sentences} & \textbf{Mean \# Facts per Sentence} \\ \midrule
+Baseline, Baseline & 6.11 & 2.33 \\
+Greedy, Greedy & 5.81 & 2.45\\
+Greedy, Annealing & 5.81 & 2.45 \\ \bottomrule
 \end{tabular}
 \end{table}
 
@@ -531,10 +530,9 @@ This paper has presented a Machine Learning approach to general-purpose discours
 
 The system currently has two major drawbacks, which represent opportunities for future work:
 
-(1) The evaluation of system such as this ultimately needs to have human involvement, with subjective scoring done by native English speakers. The learned scorers seek to find information groupings and orderings that match those of the input texts; however there is not reason to believe that other groupings/orderings are incorrect or worse. The difficulty in this process is that understanding the semantics of an AMR paragraph and an AMR sentence is a non-trivial task for a human-scorer. These graphs could have hundreds of nodes and edges, representing complex higher-order logic. Without an NLG system built upon AMR semantics it will be incredibly time-consuming for a human annotator. We may be able to build a tool that translates AMR to a more easily understandable language, without having to generate all the way to natural language, allowing more rapid human scoring. 
+(1) The evaluation of system such as this ultimately needs to have human involvement, with subjective scoring done by native English speakers. The learned scorers seek to find information groupings and orderings that match those of the input texts; however there is no reason to believe that other groupings/orderings are incorrect. The difficulty in this process is that understanding the semantics of an AMR paragraph a non-trivial task for a human-scorer. These graphs could have hundreds of nodes and edges, representing complex higher-order logic. Without an NLG system built upon AMR semantics it will be incredibly time-consuming for a human annotator. We may be able to build a tool that translates AMR to a more easily understandable language, without having to generate all the way to natural language, allowing more rapid human scoring. 
 
-(2) In our system, information grouping and ordering are treated as separate systems in a pipeline; however, these two tasks should really happen simultaneously in one step. The ordering of information is clearly dependent on how the information is grouped, and the information grouped in a sentence should be dependent on what has already been said (the ordering of sentences beforehand). Since these two tasks are dependent on each other, we expect a simultaneous system would outperform our pipeline architecture.
-
+(2) In our system, information grouping and ordering are treated as separate systems in a pipeline; however, these two tasks should really happen simultaneously. The ordering of information is clearly dependent on how the information is grouped, and the information grouped in a sentence should be dependent on what has already been said (the ordering of sentences beforehand). Since these two tasks are interdependent, we expect a simultaneous system would outperform our pipeline architecture.
 
 \pagebreak
 \bibliographystyle{acm}
