@@ -1,40 +1,42 @@
 Background:
-    1. AMR
-    2. Discourse
-    3. Information Ordering
+    1. AMR - andrew
+    2. Discourse planning - jon
+    3. Information Ordering - andrew
 
 Related Work:
-    1. Learning to order facts
-    2. Sentence Ordering
-    3. Discourse planners that use RST
+    1. Learning to order facts - andrew
+    2. Sentence Ordering - andrew
+    3. Discourse planners that use RST - jon 
 
-Data
+Data - andrew
     1. amr
     2. sample?
 
-Preprocessing:
+Preprocessing: - jon
     1. and-removal
     2. arg-of reversals
     3. graph merging/entity disambiguation
 
 System Architecture:
-    1. high level architecture
-    2. subgraph selection
+    1. high level architecture - andrew
+
+    2. subgraph selection - jon
         2.1 training (model, features, etc)
         2.2 test (discrete optimization)
-    3. subgraph ordering
+
+    3. subgraph ordering - andrew
         3.1 training (model, features, etc)
         3.2 test (discrete optimization)
 
 Evaluation of scoring modules:
-    1. subgraph selection
+    1. subgraph selection - jon
         1.1 evaluation metrics
         1.2 investigation of feature weights
-    2. subgraph ordering
+    2. subgraph ordering - andrew
         2.1 evaluation metrics
         2.2 investigation of feature weights
 
-Experiments:
+Experiments: -andrew
     1. explain baseline
     2. explain revised kendall tau metric
     3. report results (including other interesting summary statistics like mean # sentences and mean # fragments per sentence)
