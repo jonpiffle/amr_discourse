@@ -446,8 +446,54 @@ subgraph ordering problem.
 
 \subsection{Pipeline}
 
+To contsruct the entire pipeline, we trained a subgraph selector and subgraph
+ordeer separately and combined them in the following manner:
+
+\begin{algorithm}
+\caption{Full Pipeline}
+\label{pipeline_procedure}
+\begin{algorithmic}
+\STATE Input: $P \gets$ Full AMR representation of paragraph
+\STATE Input: $selector \gets$ subgraph selector
+\STATE Input: $orderer \gets$ subgraph orderer
+\STATE Starting with an initial partition $p$ of $P$, perform discrete
+optimization using $selector$ to find an optimal partition $p'$.
+\STATE Use $orderer$ to perform a discrete optimization over potential
+orderings of the subgraphs in $p'$ to find an optimal ordering $o'$.
+\STATE Output the subgraphs $p'$ ordered by $o'$
+\end{algorithmic}
+\end{algorithm}
+
 To evaluate the pipeline as a whole, we used a revised Kendall's tau metric, in
 accordance with \cite{lapata2006automatic}.
+
+\section{Experiments}
+
+We trained a subgraph selector and orderer on our training dataset and
+constructed a pipeline as described above. To establish a baseline, we ran the
+pipeline against our test set, but rather than perform discrete optimization,
+each optimizer just computed a random sampling of the possible partitionings or
+orderings.
+
+Next, we ran the pipeline again, this time using our discrete optimizations.
+We implemented only greedy search for the subgraph selection problem, but used
+both greedy search and simulated annealing for the subgraph ordering problem.
+
+Table \ref{tab:experiments} summarizes the mean, standard deviation, min and max of the
+revised Kendall tau metric for each experiment.
+
+\begin{table}[H]
+\centering
+\caption{Revised Kendall Tau Results}
+\label{tab:experiments}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{(Selection, Ordering)} & \textbf{Mean} & \textbf{Std. Dev.} & \textbf{Min} & \textbf{Max} \\ \midrule
+Baseline, Baseline & 40.967289719626166 & 62.38075619228794 & 0 & 634 \\
+Greedy, Greedy & 36.434579439252339 & 61.217880539269935 & 2 & 563 \\
+Greedy, Annealing & 34.481308411214954 & 50.605189107869165 & 2 & 411 \\ \bottomrule
+\end{tabular}
+\end{table}
 
 \section{Conclusion and Future Work}
 
