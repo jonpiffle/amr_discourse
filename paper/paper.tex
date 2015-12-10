@@ -22,12 +22,12 @@
 \listoftables
 
 \abstract
-This paper presents a Machine Learning pipeline for Discourse Planning at a semantic level, looking at sentence and paragraph Abstract Meaning Representations. Due to the flexibility of AMR, the learned planner could be used in a general-purpose NLG system that produces any form of semantically driven text. Our pipeline seeks to learn scoring functions for merging information into higher-level messages, and for ordering the those messages, resulting in a discourse plan. We show that using the learned scoring functions in a discrete-optimization system, we can outperform a random baseline in constructing an ordered sequence of sentence semantics from a semantic world representation, according to an information ordering metric.
+This paper presents a Machine Learning pipeline for Discourse Planning at a semantic level, seeking to generate ordered sentence semantics from unordered paragraph semantics. Due to the flexibility of our semantic representation (Abstract Meaning Representation), the learned planner could be used in a general-purpose NLG system that produces any form of semantically driven text. Our pipeline seeks to learn scoring functions for merging information into higher-level messages, and for ordering those messages which, when applied, result in a discourse plan. We show that using the learned scoring functions in a discrete-optimization system, we can outperform a random baseline in constructing an ordered sequence of sentence semantics from a semantic world representation, according to an information ordering metric.
 
 \pagebreak
 
 \section{Introduction}
-Discourse Planners, systems that order and structure the information to be conveyed in a Natural Language Generation system, typically are implemented as hand-written templates, known as `schemas', or by mapping discourse relations to AI planning operators and running an off-the-shelf planner \cite{applied_nlg}. Recent research has shown that Machine Learning techniques can be used to order facts according to a learned scoring function in a restricted domain \cite{learning_to_order_facts}. 
+Discourse Planners, systems that order and structure the information to be conveyed in a Natural Language Generation system, typically are implemented as hand-written templates, known as `schemas', or by mapping discourse relations to AI planning operators and running off-the-shelf planners \cite{applied_nlg}. Recent research has shown that Machine Learning techniques can be used to order facts according to a learned scoring function in a restricted domain \cite{learning_to_order_facts}. 
 
 We seek to expand on this work by using the richer semantics of Abstract Meaning Representation (AMR), and by generating higher level semantic messages during the discourse planning process. AMR allows for flexible (non 1st-order logic) relations that can model arbitrarily complex sentences. In choosing this representation we hope to provide a discourse planner that could be used in a general-purpose NLG system, rather than a domain-specific fact ordering system.
 
@@ -41,10 +41,37 @@ annotations, semantic annotations often differ for different semantic relations
 provides a single, graphical representation of the logical meaning of a
 sentence, which can be easily understood by both humans and computers.
 
-An AMR-annotated sentence is directed, rooted, labeled graph, or as a
-conjunction of logical triples. Throughout this paper, we work with the AMRs
-exclusively in the graphical form $G=(V,E)$, and will thus refer to the AMR
-using just the sets $V,E$.
+An AMR-annotated sentence is a directed, multi-rooted, labeled graph. This can be represented as a
+conjunction of logical triples, of the form (parent\_entity, child\_entity, edge\_label). 
+Throughout this paper, we work with the AMRs exclusively in the graphical form $G=(V,E)$, 
+and will thus refer to the AMR using just the sets $V,E$.
+
+As an example from our dataset, the sentence ``A prosecutor in South Korea seized 80
+kilograms of drugs'' would have the following first-order logical form (Figure \ref{fig:amr_example_logical}) and AMR
+representation (Figure \ref{fig:amr_example}).
+
+\begin{figure}
+\begin{equation*}
+\begin{split}
+\exists s,d2,p2,c,n: &\\
+&\text{instance}(s,seize\text{-}01) \wedge \text{instance}(d2, drug) \wedge \\
+&\text{instance}(p2, prosecutor) \wedge \text{instance}(c, country) \wedge \\
+&\text{instance}(n, name) \wedge \text{arg0}(s,p2) \wedge \text{arg1}(s,d2)
+\wedge \\ &\text{arg2}(s,c) \wedge \text{name}(c,n) \wedge \text{op1}(n,
+``South") \wedge \\ &\text{op2}(n, ``Korea") \wedge \text{unit}(d2, kilogram)
+\wedge \text{quant}(d2, 80)
+\end{split}
+\end{equation*}
+\label{fig:amr_example_logical}
+\caption{Example AMR in Logical Form}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width=\linewidth]{amr_example.pdf}
+\label{fig:amr_example}
+\caption{Example AMR in Graphical Form}
+\end{figure}
+
 
 \subsection{Discourse Planning}
 
@@ -54,26 +81,16 @@ In addition to just logical implication, adjacent sentences can have many differ
 
 In applied systems, discourse planning is usually implemented through either schema-based systems or AI planning systems \cite{applied_nlg}. In schema-based systems, messages are given class labels, and are substituted into the appropriate slots which have been predefined in each schema. AI planning is a more general solution in which planning operators are associated with discourse relations, and then off-the-shelf planners can be used to construct a valid discourse plan \cite{hovy1993automated}\cite{paris1990natural}.
 
-\subsection{Information Ordering}
-
-Information ordering is an integral component of the Discourse Planning phase
-of the NLG pipeline, discussed above and in \cite{applied_nlg}. After an
-information set has been structured into to pieces of information (``facts" or
-sentences), these pieces need to be ordered so that the reader can process and
-understand the information being conveyed as easily as possible. This is often
-approached as a planning problem, though Dimitromanolaki and
-Androutsopoulos\cite{learning_to_order_facts} explore using pipelined decision
-trees and instance-based learning.
-
 \section{Related Work}
 
-Early work by Kukich described a system for ``knowledge-based report generation'' in which manually specified domain rules were used to merge database facts into higher level messages, which were then ordered by a discourse module \cite{kukich1983knowledge}. The ordered output could later be passed to generation system to build a report. Work by Paris in 1990 and Hovy in 1993 introduced the idea of using AI Planners to generate discourse plans. They focused on finding explicit discourse relations between messages and using planners to generate an ordering which was allowed under the constraints of the discourse relations identified \cite{paris1990natural}\cite{hovy1993automated}. More recently, Duboue and Mckeown applied Machine Learning (ML) approaches to discourse planning. In \cite{duboue2001empirically}, they present an algorithm to learn ordering constraints among facts. In \cite{duboue2002content}, they build upon this work, using evolutionary algorithms to learn the tree representation of a planner. Although these systems seek to generate valid discourse plans, they do not use a scoring function to choose the `best' among the many valid plans that are available. Dimitromanolaki and Androutsopoulos used ML techniques to learn such a scoring function \cite{learning_to_order_facts}. They train a pipeline of classifiers that repeatedly choose the next fact to be added to a paragraph for a specific domain.
-In order to train this pipeline, Dimitromanolaki and Androutsopoulos assume a
-fixed $k$ number of sentences per paragraph (in their paper $k=6$).
+Early work by Kukich described a system for ``knowledge-based report generation'' in which manually specified domain rules were used to merge database facts into higher level messages, which were then ordered by a discourse module \cite{kukich1983knowledge}. The ordered output could later be passed to generation system to build a report. Work by Paris in 1990 and Hovy in 1993 introduced the idea of using AI Planners to generate discourse plans. They focused on finding explicit discourse relations between messages and using planners to generate an ordering which was allowed under the constraints of the discourse relations identified \cite{paris1990natural}\cite{hovy1993automated}. 
+
+More recently, Duboue and Mckeown applied Machine Learning (ML) approaches to discourse planning. In \cite{duboue2001empirically}, they present an algorithm to learn ordering constraints among facts. In \cite{duboue2002content}, they build upon this work, using evolutionary algorithms to learn the tree representation of a planner. Although these systems seek to generate valid discourse plans, they do not use a scoring function to choose the `best' among the many valid plans that are available. Dimitromanolaki and Androutsopoulos used ML techniques to learn such a scoring function \cite{learning_to_order_facts}. They train a pipeline of classifiers, where each classifier chooses the next fact to be added to a domain-specific paragraph. In order to train this pipeline, Dimitromanolaki and Androutsopoulos assumed a fixed $k$ number of sentences per paragraph (in their paper $k=6$).
 
 Our work differs from this prior research in four major ways: (1) It is strictly at a semantic level, and the semantic representation is general-purpose. Our entire pipeline is built upon AMR semantics, rather than natural language `facts', meaning the internal entities and their relations can be reasoned about. (2) Higher-level messages are constructed as part of the discourse planning process. While other systems work at the individual fact level, our system seeks to group facts into higher level sentential messages that are ordered by our discourse module. The order of sentential units should be dependent on the information they contain, therefore the merging procedure must occur before or during the discourse planning. (3) Our system does not explicitly model the discourse relations between units. (4) Our system imposes no limit on the number of sentences in a given paragraph.
 
 \section{Data}
+\label{sec:data}
 
 The dataset for this research was the AMR ``proxy" dataset - a corpus of
 AMR-annotated sentences obtained from newswire data. Since the source text of
@@ -81,37 +98,14 @@ the articles was unavailable, we used a sliding window approach to generate
 ``paragraphs" of size $k$ from the articles. For an article with $n$ sentences,
 we could generate paragraphs containing sentences $(s_1,s_2,\ldots,s_k),
 (s_2,s_3,\ldots,s_k,s_{k+1}), \ldots (s_{n-k},s_{n-k+1},\ldots,s_n)$.
-As an example from our dataset, ``A prosecutor in South Korea seized 80
-kilograms of drugs'' would have the following first-order logical form and AMR
-representation.\\
 
-\noindent \textbf{Logical form}:
-\begin{equation}
-\begin{split}
-\exists s,d2,p2,c,n: &\\
-&\text{instance}(s,want\text{-}01) \wedge \text{instance}(d2, drug) \wedge \\
-&\text{instance}(p2, prosecutor) \wedge \text{instance}(c, country) \wedge \\
-&\text{instance}(n, name) \wedge \text{arg0}(s,p2) \wedge \text{arg1}(s,d2)
-\wedge \\ &\text{arg2}(s,c) \wedge \text{name}(c,n) \wedge \text{op1}(n,
-``South") \wedge \\ &\text{op2}(n, ``Korea") \wedge \text{unit}(d2, kilogram)
-\wedge \text{quant}(d2, 80)
-\end{split}
-\end{equation}
-\textbf{AMR form}:
-\begin{figure}
-\includegraphics[width=\linewidth]{amr_example.pdf}
-\label{fig:amr_example}
-\caption{Example AMR}
-\end{figure}
-
-Our training set had 1676 ``paragraphs" of size $k=5$, and our test set had 214
-paragraphs.
+After applying the sliding window function, our training set had 1676 ``paragraphs" of size $k=5$, and our test set had 214 paragraphs.
 
 \section{Preprocessing}
 Before we can feed our dataset through our featurizer and training/test pipeline, we have to apply various transformations to it: the first two are to ensure uniform sentence semantics and the third is to build our paragraph semantics.
 
 \subsection{ARG-of Reversal}
-The typical annotation for a sentence is the one shown in figure \ref{fig:amr_example}. However, due to the flattened textual representation of AMR, it is sometimes easier for annotators to add reversed edges. For example, in figure \ref{fig:amr_example}, instead of adding the edge: (`s', `p2', `ARG0'), they could have added (`p2', `s', `ARG0-of'), resulting in figure \ref{fig:amr_example_argof}. To fix this, we just reverse any such edge and change the label from `ARGN-of' to `ARGN'.
+The typical annotation for a sentence is the one shown in Figure \ref{fig:amr_example}. However, due to the annotation format, it is sometimes easier for annotators to add reversed edges. For example, in Figure \ref{fig:amr_example}, instead of adding the edge: (`s', `p2', `ARG0'), an annotator could have added (`p2', `s', `ARG0-of'), resulting in Figure \ref{fig:amr_example_argof}. To fix this, we just reverse any such edge and change the label from `ARGN-of' to `ARGN'.
 
 \begin{figure}
 \includegraphics[width=\linewidth]{amr_example_argof.pdf}
@@ -120,7 +114,7 @@ The typical annotation for a sentence is the one shown in figure \ref{fig:amr_ex
 \end{figure}
 
 \subsection{Translation of `and' Semantics}
-The next issue that we had to address in the sentence semantics was the way `and' is handled in AMR. For ease of annotation when `and' occurs in a sentence, an `and' instance is created with everything being `anded' together as its children. Then this `and' instance is used as the argument wherever one of the instances children would have gone before. For example, if instead our example sentence were ``A prosecutor in South Korea seized 80 kilograms of drugs and dozens of weapons.'', we would have the AMR graph shown in figure \ref{fig:amr_example_and}.
+The next issue that we had to address in the sentence semantics was the way `and' is handled in AMR. For ease of annotation when `and' occurs in a sentence, an `and' instance is created with everything being `anded' together as its children. Then this `and' instance is used as the argument wherever one of the instances children would have been before. For example, if instead our example sentence were ``A prosecutor in South Korea seized 80 kilograms of drugs and dozens of weapons.'', we would have the AMR graph shown in Figure \ref{fig:amr_example_and} instead of the one in Figure \ref{fig:amr_example}.
 
 \begin{figure}
 \includegraphics[width=\linewidth]{amr_example_and.pdf}
@@ -128,11 +122,11 @@ The next issue that we had to address in the sentence semantics was the way `and
 \label{fig:amr_example_and}
 \end{figure}
 
-While this is representation is not necessarily {\em wrong}, the choice to `and' these two entities together was syntactic, not semantic. A strictly semantic representation of this sentence should contain the information: there is a prosecutor, there are drugs, there are weapons, the prosecutor seized the drugs, and the prosecutor seized the weapons. In a generation process, this could be realized as one sentence (``A prosecutor in South Korea seized 80 kilograms of drugs and dozens of weapons.'') or two sentences (``A prosecutor in South Korea seized 80 kilograms of drugs. The prosecutor also seized dozens of weapons.''). Since we ultimately want to look at how information in paragraphs is grouped into sentences and then ordered, we need to translate these `and' semantics back to a strictly semantic representation; otherwise, we have already encoded some of our information grouping.
+While this representation is not necessarily {\em wrong}, the choice to `and' these two entities together was syntactic, not semantic. A strictly semantic representation of this sentence should contain the information: there is a prosecutor, there are drugs, there are weapons, the prosecutor seized the drugs, and the prosecutor seized the weapons. In a generation process, this could be realized as one sentence (``A prosecutor in South Korea seized 80 kilograms of drugs and dozens of weapons.'') or two sentences (``A prosecutor in South Korea seized 80 kilograms of drugs. The prosecutor also seized dozens of weapons.''). Since we ultimately want to look at how information in paragraphs is grouped into sentences and then ordered, we need to translate these `and' semantics back to a strictly semantic representation; otherwise, we have already partially encoded our information grouping.
 
-To recover the actual semantics from the `and' semantics, we must make N copies of each `and' instance, where N is the number of children of that `and' instance. Then, for each child, we must delete the copied `and' instance and replace it with the child. This algorithm is written formally in algorithm \ref{alg:translate_and_semantics}.
+To recover the actual semantics from the `and' semantics, we must make one copy of the subgraph that the `and' instance is an argument to for each child of the `and' instance. Then, for each copy, we delete the `and' instance and replace it with the child. This algorithm is written formally in algorithm \ref{alg:translate_and_semantics}.
 
-When we apply this algorithm to our semantic graph in figure \ref{fig:amr_example_and}, a new `seize-01' instance is made with the `drugs' instance as ARG1 and the `weapons' instance as ARG1 respectively. This resulting graph is shown in figure \ref{fig:amr_example_and_removed}.
+When we apply this algorithm to our semantic graph in figure \ref{fig:amr_example_and}, a new `seize-01' instance is made with the `drugs' instance as ARG1 and another with the `weapons' instance as ARG1. This resulting graph is shown in Figure \ref{fig:amr_example_and_removed}.
 
 \begin{algorithm}
 \caption{Translate `and' Semantics}
@@ -175,21 +169,21 @@ When we apply this algorithm to our semantic graph in figure \ref{fig:amr_exampl
 \end{figure}
 
 \subsection{Graph Merging}
-After the semantic graphs have been preprocessed for each sentence, they have to be merged together to form paragraph semantic graphs. The only complication is deciding if two entities in separate sentences are the same. For example if we are merging the sentences ``The red dog chased the cat. Afterwards, the dog slept.'', the two dogs should be recognized as the same entity. However, if the sentences were ``The red dog chased the cat. The black dog slept.'', the two dogs should be recognized as separate. 
+After the semantic graphs have been preprocessed for each sentence, they have to be merged together to form a semantic graph representing all of the information communicated by the paragraph. The only complication is deciding if two entities in separate sentences are the same. For example if we are merging the sentences ``The red dog chased the cat. Afterwards, the dog slept.'', the two dogs should be recognized as the same entity. However, if the sentences were ``The red dog chased the cat. The black dog slept.'', the two dogs should be recognized as separate. 
 
 We define two nodes $u, v$ as {\b equivalent} if they are two `concept' nodes with the same label, or they have no conflicting attributes and no conflicting children. Formally:
 
 \[
     equiv(u,v) = \left\{\begin{array}{lr}
     u.\text{label} = v.\text{label}, & u,v \text{ `concepts'} \\
-    \forall k \text{ attribute of } u \text{ and } v, v.\text{attr}[k] = v.\text{attr}[k] \text{ } \land, & \text{else} \\
+    \forall k \text{ attribute of } u \text{ and } v, u.\text{attr}[k] = v.\text{attr}[k] \text{ } \land, & \text{else} \\
     \forall e,f \text{ childedge of } u,v \text{ with same label, } equiv(e.\text{child}, f.\text{child}) & \\
     \end{array}\right\}
 \]
 
 To merge two sentences, we use our node equivalence function in addition to algorithm \ref{alg:merge_graphs}. Since this algorithm returns a new, merged graph, we can continually apply it to a list of sentences as a reduction function, resulting in a semantic paragraph graph. Figure \ref{fig:amr_example_3_merged} shows the resultant semantic paragraph graph of the following piece of text: ``A prosecutor in South Korea seized 80 kilograms of drugs. The prosecutor disposed of the drugs. South Korean media stated the drugs originated from North Korea.'' We will continue to use this paragraph as an example throughout the paper.
 
-The only issue of concern during graph merging is what to do when a node in one graph has multiple equivalent nodes in the second graph. This can be caused by annotation errors (i.e. a `name' attribute is annotated ``John F. Kennedy'' in one sentence and ``JFK'' in another) or underspecification (i.e. there are two dogs in the world and the next sentence simply refers to ``the dog''). When this happens, there is no clear resolution, so we drop the errant paragraph from our dataset.
+On potential issue arises when a node in one graph has multiple equivalent nodes in the second graph. This can be caused by annotation errors (i.e. a `name' attribute is annotated ``John F. Kennedy'' in one sentence and ``JFK'' in another) or underspecification (i.e. there are two dogs in the world and the next sentence simply refers to ``the dog''). When this happens, there is no clear resolution, so we drop the errant paragraph from our dataset.
 
 \begin{algorithm}
 \caption{Merge Two Sentence Semantic Graphs}
