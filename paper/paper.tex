@@ -282,6 +282,10 @@ std\_dev pairwise verb set similarity & -0.17388411     \\ \bottomrule
 
 \subsubsection{Test}
 
+We can test each component of the pipeline in isolation before combining them, to see how well each is performing. To test the Subgraph Selection scorer, I started with the 214 partitions in our test dataset (each with label 1), and sampled a random partition (with label 0) for a class-balanced test dataset with 428 instances. I generated features for each instance and ran the test set through the classifier, which later serves as a scoring function. The evaluation metrics are reported in table \ref{tab:subgraph_selection_eval}. The classifier performs very well in isolation; this is expected as it is just differentiating partitions between ``actual subgraph partition" and ``random subgraph partition''.
+
+In addition to evaluating the test set, we can inspect the feature weights in Table \ref{tab:subgraph_selection_features} to get an idea of what the scoring function is doing. Looking at the first two features, we see that very small and very large paragraphs are penalized (since the ``number of sentences'' feature is positive but the square is negative). After that, we see the two most important features are the mean and standard deviation of the pairwise subgraph similarity; both features have large negative values. The large negative value on the mean pairwise subgraph similarity implies that the classifier prefers paragraphs for which similar facts are grouped into the same sentence, rather than spread throughout the paragraph. The negative value on the standard deviation implies that the classifier prefers a uniform rate of new information introduced in each sentence; there should be the same amount of information overlap between sentences.
+
 \begin{table}[H]
 \centering
 \caption{Evaluation Metrics for Subgraph Selection Classifier}
