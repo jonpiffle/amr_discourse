@@ -378,6 +378,8 @@ max combined Jaccard & 0.82229913 \\ \hline
 \caption{Feature weights for Subrgaph Order Scorer}
 \end{table}
 
+% TODO: comments about feature weights
+
 \subsubsection{Testing}
 
 For subgraph ordering, we use Kendall's tau metric as our evaluation function.
@@ -465,7 +467,11 @@ orderings of the subgraphs in $p'$ to find an optimal ordering $o'$.
 \end{algorithm}
 
 To evaluate the pipeline as a whole, we used a revised Kendall's tau metric, in
-accordance with \cite{lapata2006automatic}.
+accordance with \cite{lapata2006automatic}. To score both the selection and
+ordering simultaneously, we count the number of facts which are out of order.
+This accounts for mistakes both in the subgraph selection, where a fact is
+placed in the wrong set of facts, and in the subgraph ordering, where a group
+of facts is placed in the wrong order.
 
 \section{Experiments}
 
@@ -494,6 +500,8 @@ Greedy, Greedy & 36.434579439252339 & 61.217880539269935 & 2 & 563 \\
 Greedy, Annealing & 34.481308411214954 & 50.605189107869165 & 2 & 411 \\ \bottomrule
 \end{tabular}
 \end{table}
+
+% TODO: comments about results
 
 \section{Conclusion and Future Work}
 
