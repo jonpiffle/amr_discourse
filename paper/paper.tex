@@ -376,6 +376,8 @@ max combined Jaccard & 0.82229913 \\ \hline
 \caption{Feature weights for Subrgaph Order Scorer}
 \end{table}
 
+% TODO: comments about feature weights
+
 \subsubsection{Testing}
 
 For subgraph ordering, we use Kendall's tau metric as our evaluation function.
@@ -463,7 +465,11 @@ orderings of the subgraphs in $p'$ to find an optimal ordering $o'$.
 \end{algorithm}
 
 To evaluate the pipeline as a whole, we used a revised Kendall's tau metric, in
-accordance with \cite{lapata2006automatic}.
+accordance with \cite{lapata2006automatic}. To score both the selection and
+ordering simultaneously, we count the number of facts which are out of order.
+This accounts for mistakes both in the subgraph selection, where a fact is
+placed in the wrong set of facts, and in the subgraph ordering, where a group
+of facts is placed in the wrong order.
 
 \section{Experiments}
 
@@ -492,6 +498,11 @@ Greedy, Greedy & 36.434579439252339 & 61.217880539269935 & 2 & 563 \\
 Greedy, Annealing & 34.481308411214954 & 50.605189107869165 & 2 & 411 \\ \bottomrule
 \end{tabular}
 \end{table}
+
+Looking at these results, we see that performing the discrete optimizations do
+yield results that are better than our baseline, and that both greedy search
+and annealing give about the same improvement over the baseline for the
+subgraph ordering subproblem.
 
 \section{Conclusion and Future Work}
 This paper has presented a Machine Learning approach to general-purpose discourse planning at a semantic level. We have provided a pipeline that, given a complex semantic representation of information to communicated, selects how to split that information into sentential units, and then selects how to order those sentential units. Both discrete optimization strategies applied to the learned scoring functions resulted in a better information ordering than a random baseline, according to a modified Kendall-Tau distance. The discourse planner presented can be used on any AMR-annotated sentences, rather than domain-specific facts. 
