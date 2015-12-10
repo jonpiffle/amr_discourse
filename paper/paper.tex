@@ -11,7 +11,7 @@
 \usepackage{latexsym}
 \usepackage{multirow}
 
-\title{Title}
+\title{Learning to Group and Order AMR Semantics for General Purpose Discourse Planning}
 \author{Andrew Mason \and Jonathan Pfeil}
 
 \begin{document}
@@ -71,9 +71,7 @@ Early work by Kukich described a system for ``knowledge-based report generation'
 In order to train this pipeline, Dimitromanolaki and Androutsopoulos assume a
 fixed $k$ number of sentences per paragraph (in their paper $k=6$).
 
-Our work differs from this prior research in four major ways: (1) It is strictly at a semantic level. Our entire pipeline is built upon AMR semantics, rather than natural language `facts', meaning the internal entities and their relations can be reasoned about. (2) Higher-level messages are constructed as part of the discourse planning process. While other systems work at the individual fact level, our system seeks to group facts into higher level sentential messages that are ordered by our discourse module. The order of sentential units should be dependent on the information they contain, therefore the merging procedure must occur before or during the discourse planning. (3) Our system does not explicitly model the discourse relations between units.
-(4) Our system imposes no limit on the number of sentences in a given
-paragraph.
+Our work differs from this prior research in four major ways: (1) It is strictly at a semantic level, and the semantic representation is general-purpose. Our entire pipeline is built upon AMR semantics, rather than natural language `facts', meaning the internal entities and their relations can be reasoned about. (2) Higher-level messages are constructed as part of the discourse planning process. While other systems work at the individual fact level, our system seeks to group facts into higher level sentential messages that are ordered by our discourse module. The order of sentential units should be dependent on the information they contain, therefore the merging procedure must occur before or during the discourse planning. (3) Our system does not explicitly model the discourse relations between units. (4) Our system imposes no limit on the number of sentences in a given paragraph.
 
 \section{Data}
 
@@ -496,6 +494,14 @@ Greedy, Annealing & 34.481308411214954 & 50.605189107869165 & 2 & 411 \\ \bottom
 \end{table}
 
 \section{Conclusion and Future Work}
+This paper has presented a Machine Learning approach to general-purpose discourse planning at a semantic level. We have provided a pipeline that, given a complex semantic representation of information to communicated, selects how to split that information into sentential units, and then selects how to order those sentential units. Both discrete optimization strategies applied to the learned scoring functions resulted in a better information ordering than a random baseline, according to a modified Kendall-Tau distance. The discourse planner presented can be used on any AMR-annotated sentences, rather than domain-specific facts. 
+
+The system currently has two major drawbacks, which represent opportunities for future work:
+
+(1) The evaluation of system such as this ultimately needs to have human involvement, with subjective scoring done by native English speakers. The learned scorers seek to find information groupings and orderings that match those of the input texts; however there is not reason to believe that other groupings/orderings are incorrect or worse. The difficulty in this process is that understanding the semantics of an AMR paragraph and an AMR sentence is a non-trivial task for a human-scorer. These graphs could have hundreds of nodes and edges, representing complex higher-order logic. Without an NLG system built upon AMR semantics it will be incredibly time-consuming for a human annotator. We may be able to build a tool that translates AMR to a more easily understandable language, without having to generate all the way to natural language, allowing more rapid human scoring. 
+
+(2) In our system, information grouping and ordering are treated as separate systems in a pipeline; however, these two tasks should really happen simultaneously in one step. The ordering of information is clearly dependent on how the information is grouped, and the information grouped in a sentence should be dependent on what has already been said (the ordering of sentences beforehand). Since these two tasks are dependent on each other, we expect a simultaneous system would outperform our pipeline architecture.
+
 
 \pagebreak
 \bibliographystyle{acm}
