@@ -20,9 +20,17 @@
 \listoffigures
 \listofalgorithms
 \listoftables
+
+\abstract
+This paper presents a Machine Learning pipeline for Discourse Planning at a semantic level, looking at sentence and paragraph Abstract Meaning Representations. Due to the flexibility of AMR, the learned planner could be used in a general-purpose NLG system that produces any form of semantically driven text. Our pipeline seeks to learn scoring functions for merging information into higher-level messages, and for ordering the those messages, resulting in a discourse plan. We show that using the learned scoring functions in a discrete-optimization system, we can outperform a random baseline in constructing an ordered sequence of sentence semantics from a semantic world representation, according to an information ordering metric.
+
 \pagebreak
 
 \section{Introduction}
+Discourse Planners, systems that order and structure the information to be conveyed in a Natural Language Generation system, typically are implemented as hand-written templates, known as `schemas', or by mapping discourse relations to AI planning operators and running an off-the-shelf planner \cite{applied_nlg}. Recent research has shown that Machine Learning techniques can be used to order facts according to a learned scoring function in a restricted domain \cite{learning_to_order_facts}. 
+
+We seek to expand on this work by using the richer semantics of Abstract Meaning Representation (AMR), and by generating higher level semantic messages during the discourse planning process. AMR allows for flexible (non 1st-order logic) relations that can model arbitrarily complex sentences. In choosing this representation we hope to provide a discourse planner that could be used in a general-purpose NLG system, rather than a domain-specific fact ordering system.
+
 \section{Background}
 \subsection{Semantic Representation}
 
