@@ -255,12 +255,34 @@ $$J(A,B) = \frac{\lvert A \cap B \rvert}{\lvert A \cup B \rvert}$$
 \label{tab:subgraph_selection_features}
 \begin{tabular}{@{}ll@{}}
 \toprule
-\textbf{Feature}                           & \textbf{Description}                            \\ \midrule
-partition\_length                          & Number of groups in the partition               \\
-partition\_length\_squared                 & Number of groups in the partition squared       \\
-mean/min/max/std\_dev partition\_facts     & Number of facts per partition                   \\
-mean/min/max/std\_dev subgraph\_similarity & Pairwise subgraph similarity between all groups \\
-mean/min/max/std\_dev verb\_similarity     & Pairwise verb similarity between all groups     \\ \bottomrule
+\textbf{Feature}                      & \textbf{Weight} \\ \midrule
+\# groups in partition                & 10.29970016     \\
+\# groups in partition squared        & -1.17590317     \\
+mean \# facts per partition           & 1.09239105      \\
+max \# facts per partition            & -0.21350766     \\
+min \# facts per partition            & 0.11910551      \\
+std\_dev \# facts per partition       & 0.20101274      \\
+mean pairwise subgraph similarity     & -18.66465415    \\
+min pairwise subgraph similarity      & 1.77360275      \\
+max pairwise subgraph similarity      & -0.38517871     \\
+std\_dev pairwise subgraph similarity & -7.56089457     \\
+mean pairwise verb set similarity     & -1.02945557     \\
+min pairwise verb set similarity      & 0.04030027      \\
+max pairwise verb set similarity      & 0.89961397      \\
+std\_dev pairwise verb set similarity & -0.17388411     \\ \bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Test}
+
+\begin{table}[H]
+\centering
+\caption{Evaluation Metrics for Subgraph Selection Classifier}
+\label{tab:subgraph_selection_eval}
+\begin{tabular}{@{}lllll@{}}
+\toprule
+\textbf{Precision} & \textbf{Recall} & \textbf{f1-score} & \textbf{auc} & \textbf{support} \\ \midrule
+0.93               & 0.93            & 0.93              & 0.98         & 428              \\ \bottomrule
 \end{tabular}
 \end{table}
 
