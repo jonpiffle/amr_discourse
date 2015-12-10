@@ -224,6 +224,11 @@ containing all of the information in the information set.
 To accomplish this task, we split the problem into two subproblems: (1)
 subgraph selection and (2) subgraph ordering.
 
+For each subproblem, a learner was trained that could score the ``goodness" of
+a given partitioning or ordering, depending on the problem. To find the best
+possible partitioning or ordering, we use a greedy search optimization
+procedure, which is described more fully in ``Discrete Optimization".
+
 \subsection{Subgraph Selection}
 \subsubsection{Problem Description}
 
