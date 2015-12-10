@@ -438,6 +438,24 @@ subgraph ordering problem.
 
 \subsection{Pipeline}
 
+To contsruct the entire pipeline, we trained a subgraph selector and subgraph
+ordeer separately and combined them in the following manner:
+
+\begin{algorithm}
+\caption{Full Pipeline}
+\label{pipeline_procedure}
+\begin{algorithmic}
+\STATE Input: $P \gets$ Full AMR representation of paragraph
+\STATE Input: $selector \gets$ subgraph selector
+\STATE Input: $orderer \gets$ subgraph orderer
+\STATE Starting with an initial partition $p$ of $P$, perform discrete
+optimization using $selector$ to find an optimal partition $p'$.
+\STATE Use $orderer$ to perform a discrete optimization over potential
+orderings of the subgraphs in $p'$ to find an optimal ordering $o'$.
+\STATE Output the subgraphs $p'$ ordered by $o'$
+\end{algorithmic}
+\end{algorithm}
+
 To evaluate the pipeline as a whole, we used a revised Kendall's tau metric, in
 accordance with \cite{lapata2006automatic}.
 
