@@ -1,5 +1,7 @@
 \documentclass[12pt]{article}
 
+\usepackage[section]{algorithm}
+\usepackage{algorithmic}
 \usepackage{amsmath}
 \usepackage{cite}
 \usepackage{graphicx}
@@ -14,6 +16,7 @@
 \begin{document}
 \maketitle
 \tableofcontents
+\listofalgorithms
 \pagebreak
 
 \section{Introduction}
@@ -25,28 +28,7 @@ semantic representation of natural language sentences. Unlike syntactic
 annotations, semantic annotations often differ for different semantic relations
 (named entities, temporal entities, co-referencing, etc). AMR, by contrast,
 provides a single, graphical representation of the logical meaning of a
-sentence, which can be easily understood by both humans and computers. For
-example, given the sentence ``A prosecutor in South Korea seized 80 kilograms
-of drugs'', we can construct the following logical form and AMR.\\
-
-\noindent \textbf{Logical form}:
-\begin{equation}
-\begin{split}
-\exists s,d2,p2,c,n: &\\
-&\text{instance}(s,want\text{-}01) \wedge \text{instance}(d2, drug) \wedge \\
-&\text{instance}(p2, prosecutor) \wedge \text{instance}(c, country) \wedge \\
-&\text{instance}(n, name) \wedge \text{arg0}(s,p2) \wedge \text{arg1}(s,d2)
-\wedge \\ &\text{arg2}(s,c) \wedge \text{name}(c,n) \wedge \text{op1}(n,
-``South") \wedge \\ &\text{op2}(n, ``Korea") \wedge \text{unit}(d2, kilogram)
-\wedge \text{quant}(d2, 80)
-\end{split}
-\end{equation}
-\textbf{AMR form}:
-\begin{figure}
-\includegraphics[width=\linewidth]{amr_example.pdf}
-\caption{Example AMR}
-\label{fig:amr_example}
-\end{figure}
+sentence, which can be easily understood by both humans and computers.
 
 An AMR-annotated sentence is directed, rooted, labeled graph, or as a
 conjunction of logical triples. Throughout this paper, we work with the AMRs
@@ -68,16 +50,52 @@ of the NLG pipeline, discussed above and in \cite{applied_nlg}. After an
 information set has been structured into to pieces of information (``facts" or
 sentences), these pieces need to be ordered so that the reader can process and
 understand the information being conveyed as easily as possible. This is often
-approached as a planning problem, though Reiter and Dale explore using decision
+approached as a planning problem, though Dimitromanolaki and
+Androutsopoulos\cite{learning_to_order_facts} explore using pipelined decision
 trees and instance-based learning.
 
 \section{Related Work}
 
 Early work by Kukich described a system for ``knowledge-based report generation'' in which manually specified domain rules were used to merge database facts into higher level messages, which were then ordered by a discourse module \cite{kukich1983knowledge}. The ordered output could later be passed to generation system to build a report. Work by Paris in 1990 and Hovy in 1993 introduced the idea of using AI Planners to generate discourse plans. They focused on finding explicit discourse relations between messages and using planners to generate an ordering which was allowed under the constraints of the discourse relations identified \cite{paris1990natural}\cite{hovy1993automated}. More recently, Duboue and Mckeown applied Machine Learning (ML) approaches to discourse planning. In \cite{duboue2001empirically}, they present an algorithm to learn ordering constraints among facts. In \cite{duboue2002content}, they build upon this work, using evolutionary algorithms to learn the tree representation of a planner. Although these systems seek to generate valid discourse plans, they do not use a scoring function to choose the `best' among the many valid plans that are available. Dimitromanolaki and Androutsopoulos used ML techniques to learn such a scoring function \cite{learning_to_order_facts}. They train a pipeline of classifiers that repeatedly choose the next fact to be added to a paragraph for a specific domain.
+In order to train this pipeline, Dimitromanolaki and Androutsopoulos assume a
+fixed $k$ number of sentences per paragraph (in their paper $k=6$).
 
-Our work differs from this prior research in three major ways: (1) It is strictly at a semantic level. Our entire pipeline is built upon AMR semantics, rather than natural language `facts', meaning the internal entities and their relations can be reasoned about. (2) Higher-level messages are constructed as part of the discourse planning process. While other systems work at the individual fact level, our system seeks to group facts into higher level sentential messages that are ordered by our discourse module. The order of sentential units should be dependent on the information they contain, therefore the merging procedure must occur before or during the discourse planning. (3) Our system does not explicitly model the discourse relations between units.
+Our work differs from this prior research in four major ways: (1) It is strictly at a semantic level. Our entire pipeline is built upon AMR semantics, rather than natural language `facts', meaning the internal entities and their relations can be reasoned about. (2) Higher-level messages are constructed as part of the discourse planning process. While other systems work at the individual fact level, our system seeks to group facts into higher level sentential messages that are ordered by our discourse module. The order of sentential units should be dependent on the information they contain, therefore the merging procedure must occur before or during the discourse planning. (3) Our system does not explicitly model the discourse relations between units.
+(4) Our system imposes no limit on the number of sentences in a given
+paragraph.
 
 \section{Data}
+
+The dataset for this research was the AMR ``proxy" dataset - a corpus of
+AMR-annotated sentences obtained from newswire data. Since the source text of
+the articles was unavailable, we used a sliding window approach to generate
+``paragraphs" of size $k$ from the articles. For an article with $n$ sentences,
+we could generate paragraphs containing sentences $(s_1,s_2,\ldots,s_k),
+(s_2,s_3,\ldots,s_k,s_{k+1}), \ldots (s_{n-k},s_{n-k+1},\ldots,s_n)$.
+As an example from our dataset, ``A prosecutor in South Korea seized 80
+kilograms of drugs'' would have the following first-order logical form and AMR
+representation.\\
+
+\noindent \textbf{Logical form}:
+\begin{equation}
+\begin{split}
+\exists s,d2,p2,c,n: &\\
+&\text{instance}(s,want\text{-}01) \wedge \text{instance}(d2, drug) \wedge \\
+&\text{instance}(p2, prosecutor) \wedge \text{instance}(c, country) \wedge \\
+&\text{instance}(n, name) \wedge \text{arg0}(s,p2) \wedge \text{arg1}(s,d2)
+\wedge \\ &\text{arg2}(s,c) \wedge \text{name}(c,n) \wedge \text{op1}(n,
+``South") \wedge \\ &\text{op2}(n, ``Korea") \wedge \text{unit}(d2, kilogram)
+\wedge \text{quant}(d2, 80)
+\end{split}
+\end{equation}
+\textbf{AMR form}:
+\begin{figure}
+\includegraphics[width=\linewidth]{amr_example.pdf}
+\caption{Example AMR}
+\end{figure}
+
+Our training set had 3493 ``paragraphs" of size $k=5$, and our test set had 507
+paragraphs.
 
 \section{Preprocessing}
 Before we can feed our dataset through our featurizer and training/test pipeline, we have to apply various transformations to it: the first two are to ensure uniform sentence semantics and the third is to build our paragraph semantics.
@@ -193,8 +211,106 @@ The only issue of concern during graph merging is what to do when a node in one 
 \end{figure}
 
 \section{System Architecture}
+
+From a high level, our system is a pipeline, which takes an AMR representation
+of the information set that is to be communicated as input, and outputs a set
+of AMR representations, which are the AMRs representing the sentences
+containing all of the information in the information set.
+
+To accomplish this task, we split the problem into two subproblems: (1)
+subgraph selection and (2) subgraph ordering.
+
 \subsection{Subgraph Selection}
+
+Subgraph selection solves the problem of splitting an AMR graph into a set of
+subgraphs which are optimal by some criterion, such that the union of the
+subgraphs is the original graph. Said more plainly, the problem is to split a
+concept graph into sentences, such that emitting all of the sentences would
+communicated all of the concepts in the original graph.
+
+For subgraph selection, we use a logistic regression model. We assumed that the
+AMR subgraphs in each of the paragraphs was the correct partitioning of the
+merged graph. This means that we had only positive examples in the training
+set, so we added negative examples by creating up to $k=100$ other
+partitionings of the same merged graph.
+
+Features included the length of the pairwise subgraph similarity, and pairwise
+verb overlap between the subgraphs. To determine subgraph similarity, we used
+Jaccard similarity, defined to be:
+$$J(A,B) = \frac{\lvert A \cap B \rvert}{\lvert A \cup B \rvert}$$
+
 \subsection{Subgraph Ordering}
+
+Once we have split a merged graph into a partition of $p$ sentences, there are
+$s!$ ways to order the sentences. Ideally, there exists some ordering of the
+sentences that communicates the ideas of the merged graph in the best possible
+way. Subgraph ordering is the problem of finding this optimal ordering.
+
+Once again, we assumed that the ordering of sentences in the dataset was the
+optimal ordering for that paragraph, so we needed to create non-optimal
+examples to train on. This was done by randomly reordering the sentences for
+$k=20$ reorderings for each paragraph.
+
+We trained a Ridge regression model on the dataset. For the labels of the
+training examples, we used the unnormalized Kendall's tau coefficient to
+determine the distance between a given ordering and the optimal.
+
+As noted in Related Work, our ordering model does not require the number of
+sentences to be fixed to a particular value. If it were to impose such a
+requirement, then the subgraph selection, which is further upstream in our
+pipeline, may not be able to find its optimal partitioning simply because it
+was a partitioning into a different number of sentences. As a result, our model
+could not rely on any features that deal with particular sentences (e.g. the
+similarity between the second and fifth sentences). So, we tried to use
+features that would generalize to paragraphs of any length, but would still
+vary with the ordering of those sentences within the paragraph, and all
+features had to be summarized (mean, standard deviation, min, max) over the
+paragraph. Features included the Jaccard similarity between adjancent
+sentences, between sentences that are two sentences apart, and the Jaccard
+similarity between the union of adjacent sentences and the overall paragraph.
+
+\subsection{Discrete Optimization}
+
+In both subproblems, we trained classifiers which assign a score to how ``good"
+an instance is with regard to that problem. So, to find the best instance, we
+could just enumerate all possible permutations or combinations of the input,
+and select the instance which maximizes (or, in the case of subgraph ordering,
+minimizes) the classifier's score. However, in the case of subgraph selection,
+for a paragraph of $n$ facts, there are $O(2^n)$ possible partitions. In the
+case of subgraph ordering, for a paragraph of $n$ sentences, there are $O(n!)$
+possible orderings. Neither of these are very computationally efficient, so we
+perform discrete optimization to approach an optimal solution, rather than
+enumerating all possible inputs. It is worth noting that in practice, this is
+more of a problem for the subgraph selection module, since the partitions
+returned by the subgraph selector are generally not too large, so $n$ for the
+subgraph orderer is not too bad.
+
+For discrete optimization, we implemented a greedy search procedure as follows:
+\begin{algorithm}
+\caption{Greedy search procedure}
+\label{greedy_search_alg}
+\begin{algorithmic}
+\STATE Input: $s$ // start state \\
+\STATE Input: $classifier$ \\
+\STATE $Q \gets [s]$ // queue of states to visit \\
+\STATE $opt, optv, oldoptv \gets null, 0, 1$
+\WHILE{$Q\neq\emptyset$ and $optv \neq oldoptv$}
+    \STATE $S \gets \{s: s \in Q \}$
+    \STATE $Q \gets \emptyset$
+    \STATE $oldoptv \gets optv$
+    \FORALL{$s \in S$}
+        \STATE $N \gets neighbors(s)$\\
+        \STATE Add all elements of $N$ to $Q$\\
+        \IF{$classifier.score(s) > optv$}
+            \STATE $opt, optv \gets s, classifier.score(s)$\\
+        \ENDIF
+    \ENDFOR
+\ENDWHILE
+\end{algorithmic}
+\end{algorithm}
+
+Additionally, we used a simmulated annealing approach, but only for the
+subgraph ordering problem.
 
 \section{Evaluation of Scoring Modules}
 \subsection{Subgraph Selection}
