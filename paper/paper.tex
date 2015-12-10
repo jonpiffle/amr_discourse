@@ -3,6 +3,7 @@
 \usepackage[section]{algorithm}
 \usepackage{algorithmic}
 \usepackage{amsmath}
+\usepackage{booktabs}
 \usepackage{cite}
 \usepackage{graphicx}
 \usepackage{algorithm}
@@ -91,6 +92,7 @@ representation.\\
 \textbf{AMR form}:
 \begin{figure}
 \includegraphics[width=\linewidth]{amr_example.pdf}
+\label{fig:amr_example}
 \caption{Example AMR}
 \end{figure}
 
@@ -221,23 +223,46 @@ To accomplish this task, we split the problem into two subproblems: (1)
 subgraph selection and (2) subgraph ordering.
 
 \subsection{Subgraph Selection}
+\subsubsection{Problem Description}
 
 Subgraph selection solves the problem of splitting an AMR graph into a set of
 subgraphs which are optimal by some criterion, such that the union of the
-subgraphs is the original graph. Said more plainly, the problem is to split a
-concept graph into sentences, such that emitting all of the sentences would
-communicated all of the concepts in the original graph.
+subgraphs is the original graph. Said more plainly, the problem is to split the paragraph-level semantic graph 
+into a set sentence-level semantic graphs.
 
-For subgraph selection, we use a logistic regression model. We assumed that the
-AMR subgraphs in each of the paragraphs was the correct partitioning of the
-merged graph. This means that we had only positive examples in the training
-set, so we added negative examples by creating up to $k=100$ other
-partitionings of the same merged graph.
+There are $2^{|E|}$ subgraphs for a graph with $|E|$ edges. If we consider every set of $N$ subgraphs, we would have to consider $N^{2^{|E|}}$ sets of subgraphs! Obviously this is infeasible. Fortunately, we can exploit the natural language characteristics of a semantic graph to dramatically reduce the number of subgraph sets we have to consider. 
 
-Features included the length of the pairwise subgraph similarity, and pairwise
-verb overlap between the subgraphs. To determine subgraph similarity, we used
+First, we define a {\em fact} in our semantic graph as the subgraph formed by performing a graph-traversal on a root of the graph (that is, a node with no parents). An example is shown in figure \ref{fig:amr_example_3_merged_s1_highlighted}. By design, the roots of an AMR graph will be verb instances. Therefore, we can intuitively think of the rooted graph traversal as a verb + the required graph pieces to fulfill the verb's arguments. A fact, then, is the the smallest piece of a graph that could be used to fully specify the semantics of a sentence during generation. Let $F$ refer to the set of facts in our graph.
+
+\begin{figure}
+\includegraphics[width=\linewidth]{amr_example_3_merged_s1_highlighted.pdf}
+\caption{AMR Graph with fact rooted by `s1' highlighted. Two other facts are present, rooted by `d' and `s'.}
+\label{fig:amr_example_3_merged_s1_highlighted}
+\end{figure}
+
+Given $F$, our set of facts, and the assumption that we do not want to say the exact same thing twice, we can reduce our search-space to the set of partitions of $F$ from size 1 to $|F|$ (a single group with $|F|$ facts to $|F|$ groups each with 1 fact). The size of our candidate set is now given by $B_{|F|}$, where $B_i$ is the $i^{\text{th}}$ Bell number.
+
+\subsubsection{Training}
+Our problem then is to find the best partition from the $B_{|F|}$ candidates. To do this, we trained a scoring function using a logistic regression model with class-weighted instances. We assumed that the partitioning given by the sentences in a paragraph was the correct partitioning, and gave it a label of $1$. This means that we had only positive examples in the training set, so we added negative examples by sampling $k$ other partitions from the set of partitions, giving each a label of $0$.
+
+Table \ref{tab:subgraph_selection_features} lists the features extracted for each candidate partition. To determine subgraph similarity, we used
 Jaccard similarity, defined to be:
 $$J(A,B) = \frac{\lvert A \cap B \rvert}{\lvert A \cup B \rvert}$$
+
+\begin{table}[H]
+\centering
+\caption{Features used by subgraph partition scorer}
+\label{tab:subgraph_selection_features}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Feature}                           & \textbf{Description}                            \\ \midrule
+partition\_length                          & Number of groups in the partition               \\
+partition\_length\_squared                 & Number of groups in the partition squared       \\
+mean/min/max/std\_dev partition\_facts     & Number of facts per partition                   \\
+mean/min/max/std\_dev subgraph\_similarity & Pairwise subgraph similarity between all groups \\
+mean/min/max/std\_dev verb\_similarity     & Pairwise verb similarity between all groups     \\ \bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Subgraph Ordering}
 
@@ -309,7 +334,7 @@ For discrete optimization, we implemented a greedy search procedure as follows:
 \end{algorithmic}
 \end{algorithm}
 
-Additionally, we used a simmulated annealing approach, but only for the
+Additionally, we used a simulated annealing approach, but only for the
 subgraph ordering problem.
 
 \section{Evaluation of Scoring Modules}
