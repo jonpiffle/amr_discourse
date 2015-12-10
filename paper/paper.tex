@@ -315,6 +315,21 @@ features had to be summarized (mean, standard deviation, min, max) over the
 paragraph. Features included the Jaccard similarity between adjancent
 sentences, between sentences that are two sentences apart, and the Jaccard
 similarity between the union of adjacent sentences and the overall paragraph.
+The following table summarizes the features used for subgraph ordering:
+
+\begin{table}
+\centering
+\begin{tabular}{|r|c|c|}
+\hline
+Feature & \\ \hline\hline
+Pairwise Jaccard & Jaccard similarity of the AMR graphs for sentences $s_i,s_{i+1}$ \\ \hline
+Two-apart Jaccard & Jaccard similarity of the AMR graphs for sentences $s_i,s_{i+2}$ \\ \hline
+Pairwise node Jaccard & Jaccard similarity of just the vertex sets for sentences $s_i,s_{i+1}$ \\ \hline
+Comibined Jaccard & Jaccard similarity between the paragraph AMR and $s_i \cup
+s_{i+1}$ \\ \hline
+\end{tabular}
+\caption{Subgraph Ordering Features}
+\end{table}
 
 \subsection{Discrete Optimization}
 
