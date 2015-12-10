@@ -509,6 +509,24 @@ yield results that are better than our baseline, and that both greedy search
 and annealing give about the same improvement over the baseline for the
 subgraph ordering subproblem.
 
+Looking at table \ref{tab:metrics}, we also see that the optimized pipeline
+prefers fewer sentences per paragraph, with marginally more information per
+sentence, than the baseline.
+
+\begin{table}[H]
+\centering
+\caption{Mean number of sentences and facts per sentence for the pipeline}
+\label{tab:metrics}
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{(Selection, Ordering)} & \textbf{Mean \# of Sentences} & \textbf{Mean \#
+of Facts per Sentence} \\ \midrule
+Baseline, Baseline & 6.1074766355140184 & 2.3297628156082633 \\
+Greedy, Greedy & 5.8130841121495331 & 2.447749196141479 \\
+Greedy, Annealing & 5.8130841121495331 & 2.447749196141479 \\ \bottomrule
+\end{tabular}
+\end{table}
+
 \section{Conclusion and Future Work}
 This paper has presented a Machine Learning approach to general-purpose discourse planning at a semantic level. We have provided a pipeline that, given a complex semantic representation of information to communicated, selects how to split that information into sentential units, and then selects how to order those sentential units. Both discrete optimization strategies applied to the learned scoring functions resulted in a better information ordering than a random baseline, according to a modified Kendall-Tau distance. The discourse planner presented can be used on any AMR-annotated sentences, rather than domain-specific facts. 
 
