@@ -17,7 +17,9 @@
 \begin{document}
 \maketitle
 \tableofcontents
+\listoffigures
 \listofalgorithms
+\listoftables
 \pagebreak
 
 \section{Introduction}
@@ -287,11 +289,14 @@ std\_dev pairwise verb set similarity & -0.17388411     \\ \bottomrule
 \end{table}
 
 \subsection{Subgraph Ordering}
+\subsubsection{Problem Description}
 
 Once we have split a merged graph into a partition of $p$ sentences, there are
 $s!$ ways to order the sentences. Ideally, there exists some ordering of the
 sentences that communicates the ideas of the merged graph in the best possible
 way. Subgraph ordering is the problem of finding this optimal ordering.
+
+\subsubsection{Training}
 
 Once again, we assumed that the ordering of sentences in the dataset was the
 optimal ordering for that paragraph, so we needed to create non-optimal
@@ -330,6 +335,29 @@ s_{i+1}$ \\ \hline
 \end{tabular}
 \caption{Subgraph Ordering Features}
 \end{table}
+
+\subsubsection{Testing}
+
+For subgraph ordering, we use Kendall's tau metric as our evaluation function.
+For each test example, we compute the Kendall tau distance between a random
+ordering and the correct ordering, to use as a baseline. Then, we perform a
+greedy search discrete optimization as described above using the subgraph
+ordering model to compute the scores of the various orderings.
+
+The mean, standard deviation, min and max for both the baseline and greedy
+approach are reported in the table below.
+
+\begin{table}
+\centering
+\begin{tabular}{|r|c|c|c|c|c|}
+\hline
+Approach & Mean  & Std.  & Min & Max \\ \hline\hline
+Baseline & 5.009 & 2.091 & 0   & 10  \\ \hline
+Greedy   & 1.360 & 0.910 & 0   & 5   \\ \hline
+\end{tabular}
+\caption{Evaluation results for Subgraph Ordering}
+\end{table}
+
 
 \subsection{Discrete Optimization}
 
@@ -374,11 +402,10 @@ For discrete optimization, we implemented a greedy search procedure as follows:
 Additionally, we used a simulated annealing approach, but only for the
 subgraph ordering problem.
 
-\section{Evaluation of Scoring Modules}
-\subsection{Subgraph Selection}
-\subsection{Subgraph Ordering}
+\subsection{Pipeline}
 
-\section{Experiments}
+To evaluate the pipeline as a whole, we used a revised Kendall's tau metric, in
+accordance with \cite{lapata2006automatic}.
 
 \section{Conclusion and Future Work}
 
