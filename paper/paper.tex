@@ -5,6 +5,10 @@
 \usepackage{amsmath}
 \usepackage{cite}
 \usepackage{graphicx}
+\usepackage{algorithm}
+\usepackage{algorithmic}
+\usepackage{latexsym}
+\usepackage{multirow}
 
 \title{Title}
 \author{Andrew Mason \and Jonathan Pfeil}
@@ -94,9 +98,117 @@ Our training set had 3493 ``paragraphs" of size $k=5$, and our test set had 507
 paragraphs.
 
 \section{Preprocessing}
+Before we can feed our dataset through our featurizer and training/test pipeline, we have to apply various transformations to it: the first two are to ensure uniform sentence semantics and the third is to build our paragraph semantics.
+
 \subsection{ARG-of Reversal}
+The typical annotation for a sentence is the one shown in figure \ref{fig:amr_example}. However, due to the flattened textual representation of AMR, it is sometimes easier for annotators to add reversed edges. For example, in figure \ref{fig:amr_example}, instead of adding the edge: (`s', `p2', `ARG0'), they could have added (`p2', `s', `ARG0-of'), resulting in figure \ref{fig:amr_example_argof}. To fix this, we just reverse any such edge and change the label from `ARGN-of' to `ARGN'.
+
+\begin{figure}
+\includegraphics[width=\linewidth]{amr_example_argof.pdf}
+\caption{AMR with Reversed Edge}
+\label{fig:amr_example_argof}
+\end{figure}
+
 \subsection{Translation of `and' Semantics}
+The next issue that we had to address in the sentence semantics was the way `and' is handled in AMR. For ease of annotation when `and' occurs in a sentence, an `and' instance is created with everything being `anded' together as its children. Then this `and' instance is used as the argument wherever one of the instances children would have gone before. For example, if instead our example sentence were ``A prosecutor in South Korea seized 80 kilograms of drugs and dozens of weapons.'', we would have the AMR graph shown in figure \ref{fig:amr_example_and}.
+
+\begin{figure}
+\includegraphics[width=\linewidth]{amr_example_and.pdf}
+\caption{AMR with `and' Instance}
+\label{fig:amr_example_and}
+\end{figure}
+
+While this is representation is not necessarily {\em wrong}, the choice to `and' these two entities together was syntactic, not semantic. A strictly semantic representation of this sentence should contain the information: there is a prosecutor, there are drugs, there are weapons, the prosecutor seized the drugs, and the prosecutor seized the weapons. In a generation process, this could be realized as one sentence (``A prosecutor in South Korea seized 80 kilograms of drugs and dozens of weapons.'') or two sentences (``A prosecutor in South Korea seized 80 kilograms of drugs. The prosecutor also seized dozens of weapons.''). Since we ultimately want to look at how information in paragraphs is grouped into sentences and then ordered, we need to translate these `and' semantics back to a strictly semantic representation; otherwise, we have already encoded some of our information grouping.
+
+To recover the actual semantics from the `and' semantics, we must make N copies of each `and' instance, where N is the number of children of that `and' instance. Then, for each child, we must delete the copied `and' instance and replace it with the child. This algorithm is written formally in algorithm \ref{alg:translate_and_semantics}.
+
+When we apply this algorithm to our semantic graph in figure \ref{fig:amr_example_and}, a new `seize-01' instance is made with the `drugs' instance as ARG1 and the `weapons' instance as ARG1 respectively. This resulting graph is shown in figure \ref{fig:amr_example_and_removed}.
+
+\begin{algorithm}
+\caption{Translate `and' Semantics}
+\label{alg:translate_and_semantics}
+\begin{algorithmic}[1]
+%require: amr graph
+\REQUIRE AMR Graph $G = (V, E)$
+
+% While the graph still has and instances
+\WHILE{$|G.and\_instances| > 0$}
+    % and_instance = first and instance in topological ordering of G.and_instances
+    \STATE $a \gets$ first and\_instance in topological ordering of $G$.and\_instances
+
+    % S = subgraph formed by performing a breadth first search following parent edges from and_instance upwards to roots
+    \STATE $S \gets$ subgraph formed by performing a breadth first search following parent edges from $a$ upwards to roots
+
+    % for each child of the and instance
+    \FOR{$c \in$ children($a$)}
+        % copy S
+        \STATE $S' \gets copy(S)$
+
+        % replace and_instance in S with child
+        \STATE replace $a$ with $c$ in $S'$
+
+        % add copy to graph
+        \STATE $G \gets G \cup S'$
+    \ENDFOR
+    % delete and_instance and S from graph
+    \STATE remove $a$ and $S$ from $G$
+\ENDWHILE
+% return G
+\RETURN $G$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{figure}
+\includegraphics[width=\linewidth]{amr_example_and_removed.pdf}
+\caption{AMR with Translated `and' Instance}
+\label{fig:amr_example_and_removed}
+\end{figure}
+
 \subsection{Graph Merging}
+After the semantic graphs have been preprocessed for each sentence, they have to be merged together to form paragraph semantic graphs. The only complication is deciding if two entities in separate sentences are the same. For example if we are merging the sentences ``The red dog chased the cat. Afterwards, the dog slept.'', the two dogs should be recognized as the same entity. However, if the sentences were ``The red dog chased the cat. The black dog slept.'', the two dogs should be recognized as separate. 
+
+We define two nodes $u, v$ as {\b equivalent} if they are two `concept' nodes with the same label, or they have no conflicting attributes and no conflicting children. Formally:
+
+\[
+    equiv(u,v) = \left\{\begin{array}{lr}
+    u.\text{label} = v.\text{label}, & u,v \text{ `concepts'} \\
+    \forall k \text{ attribute of } u \text{ and } v, v.\text{attr}[k] = v.\text{attr}[k] \text{ } \land, & \text{else} \\
+    \forall e,f \text{ childedge of } u,v \text{ with same label, } equiv(e.\text{child}, f.\text{child}) & \\
+    \end{array}\right\}
+\]
+
+To merge two sentences, we use our node equivalence function in addition to algorithm \ref{alg:merge_graphs}. Since this algorithm returns a new, merged graph, we can continually apply it to a list of sentences as a reduction function, resulting in a semantic paragraph graph. Figure \ref{fig:amr_example_3_merged} shows the resultant semantic paragraph graph of the following piece of text: ``A prosecutor in South Korea seized 80 kilograms of drugs. The prosecutor disposed of the drugs. South Korean media stated the drugs originated from North Korea.'' We will continue to use this paragraph as an example throughout the paper.
+
+The only issue of concern during graph merging is what to do when a node in one graph has multiple equivalent nodes in the second graph. This can be caused by annotation errors (i.e. a `name' attribute is annotated ``John F. Kennedy'' in one sentence and ``JFK'' in another) or underspecification (i.e. there are two dogs in the world and the next sentence simply refers to ``the dog''). When this happens, there is no clear resolution, so we drop the errant paragraph from our dataset.
+
+\begin{algorithm}
+\caption{Merge Two Sentence Semantic Graphs}
+\label{alg:merge_graphs}
+\begin{algorithmic}[1]
+\REQUIRE Two AMR Graphs $G, H$
+
+\FOR{$u \in H.\text{nodes}$}
+    \STATE $equiv\_nodes \gets \{v \mid v \in G.\text{nodes} \land equiv(u,v)\}$
+    \IF{$|equiv\_nodes| = 0$}
+        \STATE $G.\text{nodes} \gets G.\text{nodes} \cup \{\text{safe\_rename}(G, u)\}$
+    \ELSIF{$|equiv\_nodes| = 1$}
+        \STATE $equiv\_nodes[0].\text{attr} \gets equiv\_nodes[0].\text{attr} \cup u.\text{attr}$
+    \ELSE
+        \STATE Raise Ambiguity Error
+    \ENDIF
+\ENDFOR
+
+\STATE $G.\text{edges} \gets G.\text{edges} \cup H.\text{edges}$
+
+\RETURN $G$
+\end{algorithmic}
+\end{algorithm}
+
+\begin{figure}
+\includegraphics[width=\linewidth]{amr_example_3_merged.pdf}
+\caption{Merged AMR Graph of Three Sentences}
+\label{fig:amr_example_3_merged}
+\end{figure}
 
 \section{System Architecture}
 
