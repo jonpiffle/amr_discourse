@@ -16,6 +16,9 @@ class Node(object):
     def add_attribute(self, attr, value):
         self.attributes[attr] = value
 
+    def viz_label(self):
+        return self.label + "".join(["\n" + str(k) + "=" + str(v.replace("\"", "")) for k, v in self.attributes.items()])
+
     def __repr__(self):
         return "<Node: %s>" % self.label
 
@@ -427,9 +430,18 @@ class AMRGraph(object):
                     graph.edge(*e)
             return graph
 
+        def add_color(edge_set, edge):
+            if edge in edge_set:
+                return 'green' 
+            else:
+                return 'black'
+
+        #subgraphs = [self.get_subgraph_from_root(r).edges for r in sorted(self.get_roots(), key=lambda r: r.label)]
+        #subgraph = subgraphs[1]
+        #edges = [((e.out_node.viz_label(), e.in_node.viz_label()), {'label': e.label, 'color': add_color(subgraph, e)}) for e in self.edges]
         g = gv.Digraph()
-        nodes = [(n.label, n.attributes) for n in self.nodes.values()]
-        edges = [((e.out_node.label, e.in_node.label), {'label': e.label}) for e in self.edges]
+        nodes = [n.viz_label() for n in self.nodes.values()]
+        edges = [((e.out_node.viz_label(), e.in_node.viz_label()), {'label': e.label}) for e in self.edges]
         g = add_nodes(g, nodes)
         g = add_edges(g, edges)
         g.render('img/%s' % filename, view=True)
