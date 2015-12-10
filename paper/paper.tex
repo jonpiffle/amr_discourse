@@ -376,7 +376,18 @@ max combined Jaccard & 0.82229913 \\ \hline
 \caption{Feature weights for Subrgaph Order Scorer}
 \end{table}
 
-% TODO: comments about feature weights
+Inspecting these feature weights, we see that the most important feature is the
+standard deviation for the two-apart Jaccard similarity. Having such a large
+positive value indicates that the scorer prefers paragraphs that do not have
+uniform overlap between a sentence and the sentence which comes second after
+it. Next is the mean pairwise Jaccard similarity, which gets penalized heavily.
+This would indicate that the scorer prefers paragraphs that don't have much
+overlap between adjacent sentences. At first, this does not seem to make much
+sense at all, as one would expect to want to have some information overlap
+moving from sentence to sentence through a paragraph. However, we also observe
+that the standard deviation for pairwise similarity is penalized. So, the
+scorer also prefers orderings which make the information overlap through the
+paragraph more uniform.
 
 \subsubsection{Testing}
 
