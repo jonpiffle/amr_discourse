@@ -341,6 +341,31 @@ s_{i+1}$ \\ \hline
 \caption{Subgraph Ordering Features}
 \end{table}
 
+\begin{table}
+\centering
+\begin{tabular}{|r|c|c|}
+\hline
+Feature & Weight \\ \hline\hline
+mean pairwise Jaccard & -5.00181089 \\ \hline
+std\_dev pairwise Jaccard & -0.33312514 \\ \hline
+min pairwise Jaccard & 2.60603159 \\ \hline
+max pairwise Jaccard & 1.55569119 \\ \hline
+mean two-apart Jaccard & 4.19364855 \\ \hline
+std\_dev two-apart Jaccard & 7.77286275 \\ \hline
+min two-apart Jaccard & 2.94073393 \\ \hline
+max two-apart Jaccard & -4.35272278 \\ \hline
+mean pairwise node Jaccard & -0.94370112 \\ \hline
+std\_dev pairwise node Jaccard & 4.49617236 \\ \hline
+min pairwise node Jaccard & 1.14357291 \\ \hline
+max pairwise node Jaccard & -1.94888156 \\ \hline
+mean combined Jaccard & 0.47908235 \\ \hline
+std\_dev combined Jaccard & -1.84644112 \\ \hline
+min combined Jaccard & -0.57636185 \\ \hline
+max combined Jaccard & 0.82229913 \\ \hline
+\end{tabular}
+\caption{Feature weights for Subrgaph Order Scorer}
+\end{table}
+
 \subsubsection{Testing}
 
 For subgraph ordering, we use Kendall's tau metric as our evaluation function.
@@ -350,7 +375,7 @@ greedy search discrete optimization as described above using the subgraph
 ordering model to compute the scores of the various orderings.
 
 The mean, standard deviation, min and max for both the baseline and greedy
-approach are reported in the table below.
+Kendall tau  are reported in the table below.
 
 \begin{table}
 \centering
