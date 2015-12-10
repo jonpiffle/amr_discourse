@@ -534,6 +534,29 @@ The system currently has two major drawbacks, which represent opportunities for 
 
 (2) In our system, information grouping and ordering are treated as separate systems in a pipeline; however, these two tasks should really happen simultaneously. The ordering of information is clearly dependent on how the information is grouped, and the information grouped in a sentence should be dependent on what has already been said (the ordering of sentences beforehand). Since these two tasks are interdependent, we expect a simultaneous system would outperform our pipeline architecture.
 
+\section{Notes on Division of Labor}
+At a high level, the task breakdown for the project was:
+
+\noindent Andrew:
+\begin{enumerate}
+\item AMR parser
+\item Generate graph data structures
+\item Ordering Module
+\item Discrete Optimization
+\item Experiments
+\end{enumerate}
+
+\noindent Jon:
+\begin{enumerate}
+\item File parser
+\item ARG-of reversal
+\item `and'-semantic translation
+\item AMR graph merging
+\item Subgraph selection module
+\end{enumerate}
+
+However, there was significant overlap in many of our tasks. Since we know the division of labor was an issue of concern, we have invited you as a contributor to the github repository. You have full access to our commit history if you wish to further evaluate the individual contributions.
+
 \pagebreak
 \bibliographystyle{ieeetr}
 \bibliography{paper}
