@@ -65,6 +65,23 @@ def test():
     pickle.dump(greedy_graphs, open('greedy_graphs.pickle', 'wb'))
     pickle.dump(anneal_graphs, open('anneal_graphs.pickle', 'wb'))
 
+def example():
+    entries = FileParser().parse('paper_example_amr.txt')
+    swg = SlidingWindowGenerator(entries)
+    paragraphs = swg.generate(k=3)[:1]
+    #paragraphs[0].paragraph_graph().draw()
+    pipeline_scorer = PipelineScorer()
+    pipeline_scorer.load()
+    #greedy_graphs = pipeline_scorer.test(paragraphs, subgraph_strategy='greedy', order_strategy='greedy', processes=1)
+    #graphs = pipeline_scorer.test(paragraphs, subgraph_strategy='greedy', order_strategy='anneal', processes=1)
+    graphs = pipeline_scorer.test(paragraphs, subgraph_strategy='baseline', order_strategy='baseline', processes=1)
+    p = graphs[0]
+    subgraphs = [p.get_subgraph(r) for r in p.get_ordered_root_sets()]
+    print(subgraphs)
+    for i, s in enumerate(subgraphs):
+        s.draw('random_gv%d' % i)
+    #import code; code.interact(local=locals())
+
 LEARNERS = {
 }
 
@@ -95,7 +112,8 @@ def main(**kwargs):
 
 
 if __name__ == '__main__':
-    test()
+    #test()
+    example()
 
     '''
     parser = argparse.ArgumentParser(
